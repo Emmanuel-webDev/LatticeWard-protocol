@@ -6,7 +6,7 @@
  *   npm run sovereign -- withdraw fUSD|QOR 0xTo 1.5
  */
 import { Wallet, ZeroAddress, parseUnits } from "ethers";
-import { env, explorerLink, getProvider, getVault } from "../packages/agent-mcp/src/config.js";
+import { env, explorerLink, getFusd, getProvider, getVault } from "../packages/agent-mcp/src/config.js";
 import { sendSovereign } from "../packages/agent-mcp/src/sovereign.js";
 
 const [cmd, a, b, c] = process.argv.slice(2);
@@ -37,13 +37,16 @@ switch (cmd) {
   case "rotate-agent":
     res = await sendSovereign(vault, submitter, "configurePolicy", await policy({ agent: a }));
     break;
-  case "withdraw":
+  case "withdraw": {
+    const isQor = a === "QOR";
+    const decimals = isQor ? 18 : Number(await getFusd(provider).decimals());
     res = await sendSovereign(vault, submitter, "sovereignWithdraw", {
-      asset: a === "QOR" ? ZeroAddress : env("FUSD_ADDRESS"),
+      asset: isQor ? ZeroAddress : env("FUSD_ADDRESS"),
       to: b,
-      amount: parseUnits(c, 18),
+      amount: parseUnits(c, decimals),
     });
     break;
+  }
   default:
     console.error("usage: sovereign -- freeze | unfreeze | rotate-agent <addr> | withdraw <fUSD|QOR> <to> <amount>");
     process.exit(2);

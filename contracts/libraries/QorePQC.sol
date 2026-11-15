@@ -24,7 +24,7 @@ library QorePQC {
         if (signature.length != ML_DSA_87_SIGNATURE_LEN) return false;
 
         (bool ok, bytes memory ret) = PQC_VERIFY.staticcall(
-            abi.encodeCall(IPqcVerify.pqcVerify, (publicKey, abi.encodePacked(digest), signature))
+            abi.encodeCall(IPqcVerify.pqcVerify, (publicKey, signature, abi.encodePacked(digest)))
         );
         if (!ok || ret.length != 32) return false;
         return abi.decode(ret, (uint256)) == 1;

@@ -50,6 +50,7 @@ export const VAULT_ABI = [
 ];
 
 export const ERC20_ABI = [
+  "function decimals() view returns (uint8)",
   "function balanceOf(address) view returns (uint256)",
   "function transfer(address,uint256) returns (bool)",
 ];

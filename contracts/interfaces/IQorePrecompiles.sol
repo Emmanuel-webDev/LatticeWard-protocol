@@ -2,10 +2,9 @@
 pragma solidity ^0.8.24;
 
 /// @notice QoreChain ML-DSA-87 verification precompile at 0x0A01.
-/// @dev ABI is ASSUMED (pk, message, sig). Confirm with `npm run probe` (scripts/probe-precompiles.ts)
-///      and adjust QorePQC.verify() if the chain expects a different layout.
+/// @dev ABI confirmed via `npm run probe` on qorechain-diana (9800): (publicKey, signature, message).
 interface IPqcVerify {
-    function pqcVerify(bytes memory publicKey, bytes memory message, bytes memory signature)
+    function pqcVerify(bytes memory publicKey, bytes memory signature, bytes memory message)
         external
         view
         returns (bool);

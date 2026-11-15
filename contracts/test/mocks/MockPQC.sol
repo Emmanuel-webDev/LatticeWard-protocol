@@ -7,7 +7,7 @@ pragma solidity ^0.8.24;
 contract MockPQC {
     mapping(address => bool) public registered; // slot 0
 
-    function pqcVerify(bytes memory pk, bytes memory message, bytes memory sig) external pure returns (bool) {
+    function pqcVerify(bytes memory pk, bytes memory sig, bytes memory message) external pure returns (bool) {
         if (pk.length != 2592 || sig.length != 4627 || message.length != 32) return false;
         if (sig[0] != 0xAA) return false;
         bytes32 signed;

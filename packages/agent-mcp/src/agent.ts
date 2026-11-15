@@ -1,6 +1,6 @@
 import { Wallet, ZeroAddress, hexlify, id, parseUnits, randomBytes } from "ethers";
-import { env, explorerLink, getProvider, getVault } from "./config.js";
-import { pqcKeyStatus } from "./precompiles.js";
+import { env, explorerLink, getFusd, getProvider, getVault } from "./config.js";
+import { checkEvmWindow, pqcKeyStatus } from "./precompiles.js";
 import { preflight, PreflightUnavailable } from "./preflight.js";
 import { parseIntentOrReject } from "./schema.js";
 
@@ -39,7 +39,8 @@ export async function executeScopedSettlement(rawIntent: unknown, simulateOnly =
   const agent = new Wallet(env("AGENT_PRIVATE_KEY"), provider);
   const vault = getVault(agent);
   const asset = parsed.asset === "QOR" ? ZeroAddress : env("FUSD_ADDRESS");
-  const value = parseUnits(parsed.amount, 18); // assumes 18 decimals for fUSD and QOR; confirm on testnet
+  const decimals = parsed.asset === "QOR" ? 18 : Number(await getFusd(provider).decimals());
+  const value = parseUnits(parsed.amount, decimals);
 
   const [lim, frozen, expiry] = await Promise.all([
     vault.assetLimits(asset),
@@ -95,6 +96,13 @@ export async function executeScopedSettlement(rawIntent: unknown, simulateOnly =
   }
 
   try {
+    const win = await checkEvmWindow(agent.address);
+    if (!win.registered || !win.live) {
+      return fail(
+        "broadcast",
+        `window exhausted, reopen in QoreX (agent=${agent.address}, registered=${win.registered}, found=${win.found}, live=${win.live}, remaining_blocks=${win.remaining_blocks}, remaining_txs=${win.remaining_txs})`,
+      );
+    }
     const tx = await vault.executeScopedAgentIntent(intent);
     const receipt = await tx.wait();
     const hash = receipt?.hash ?? tx.hash;

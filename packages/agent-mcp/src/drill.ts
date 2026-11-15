@@ -1,5 +1,6 @@
-import { Contract, Wallet, ZeroAddress, hexlify, id, randomBytes } from "ethers";
+import { Contract, Wallet, ZeroAddress, hexlify, id, parseUnits, randomBytes } from "ethers";
 import { env, explorerLink, getFusd, getProvider, getVault } from "./config.js";
+import { checkEvmWindow } from "./precompiles.js";
 import { sendSovereign } from "./sovereign.js";
 
 export interface CheckResult {
@@ -76,6 +77,9 @@ export async function runQDayDrill(): Promise<CheckResult[]> {
   const asAgent = getVault(agent);
   const asLeaked = getVault(leaked);
   const fusd = env("FUSD_ADDRESS");
+  const fusdContract = getFusd(provider);
+  const fusdDecimals = Number(await fusdContract.decimals());
+  const minPayout = parseUnits("0.01", fusdDecimals);
   const pqcRecipient = env("PQC_RECIPIENT");
   const sovereignPk = env("SOVEREIGN_PK_HEX");
   const results: CheckResult[] = [];
@@ -92,8 +96,21 @@ export async function runQDayDrill(): Promise<CheckResult[]> {
     rationaleHash: id("q-day drill"),
   });
 
+  // Check agent EVM window before sending
+  const agentWin = await checkEvmWindow(agent.address);
+  if (!agentWin.registered || !agentWin.live) {
+    results.push({
+      id: "1",
+      name: "Valid agent payout inside scoped window",
+      expected: "success",
+      observed: `window exhausted, reopen in QoreX (agent=${agent.address}, registered=${agentWin.registered}, found=${agentWin.found}, live=${agentWin.live}, remaining_blocks=${agentWin.remaining_blocks}, remaining_txs=${agentWin.remaining_txs})`,
+      passed: false,
+    });
+    return results;
+  }
+
   // 1. Valid payout inside the scoped window
-  const happy = mkIntent(pqcRecipient, maxTx / 50n > 0n ? maxTx / 50n : 1n);
+  const happy = mkIntent(pqcRecipient, maxTx / 50n > 0n ? maxTx / 50n : minPayout);
   try {
     const tx = await asAgent.executeScopedAgentIntent(happy);
     const r = await tx.wait();
@@ -137,6 +154,17 @@ export async function runQDayDrill(): Promise<CheckResult[]> {
   // 6. Sovereign ML-DSA-87 emergency clawback + recovery
   if (!process.env.SOVEREIGN_SK_HEX) {
     results.push({ id: "6", name: "ML-DSA-87 emergency freeze + recovery", expected: "success", observed: "skipped (SOVEREIGN_SK_HEX not set)", passed: false, skipped: true });
+    return results;
+  }
+  const subWin = await checkEvmWindow(submitter.address);
+  if (!subWin.registered || !subWin.live) {
+    results.push({
+      id: "6",
+      name: "ML-DSA-87 emergency freeze + recovery",
+      expected: "success",
+      observed: `window exhausted, reopen in QoreX (submitter=${submitter.address}, registered=${subWin.registered}, found=${subWin.found}, live=${subWin.live}, remaining_blocks=${subWin.remaining_blocks}, remaining_txs=${subWin.remaining_txs})`,
+      passed: false,
+    });
     return results;
   }
   try {

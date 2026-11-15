@@ -7,6 +7,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "probe": "tsx scripts/probe-precompiles.ts",
+    "check:windows": "tsx scripts/check-window.ts",
     "gen:sovereign": "tsx scripts/gen-sovereign-key.ts",
     "sovereign": "tsx scripts/sovereign-cli.ts",
     "mcp": "tsx packages/agent-mcp/src/mcp-server.ts",
@@ -16,6 +17,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
     "@noble/post-quantum": "0.4.1",
+    "bech32": "^2.0.0",
     "dotenv": "^16.4.5",
     "ethers": "^6.13.4",
     "zod": "^3.23.8"

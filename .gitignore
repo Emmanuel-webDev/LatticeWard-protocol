@@ -1,0 +1,8 @@
+node_modules/
+out/
+cache/
+lib/
+.env
+*.key
+qday-report.json
+.sovereign-keys.json

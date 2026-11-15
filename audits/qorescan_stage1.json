@@ -1,0 +1,173 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:cc7867bd-383c-5e47-8bd5-3b138cf27cf2",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-15T19:33:32Z",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "supplier": {
+            "name": "QoreChain Association"
+          },
+          "name": "qorescan",
+          "version": "0.1.0",
+          "externalReferences": [
+            {
+              "type": "vcs",
+              "url": "https://github.com/qorechain/qorescan"
+            }
+          ]
+        }
+      ]
+    },
+    "component": {
+      "type": "platform",
+      "bom-ref": "target",
+      "name": "Solidity sources"
+    },
+    "properties": [
+      {
+        "name": "qorescan:disclaimer",
+        "value": "QoreScan output is an inventory aid. It is not a certification, an audit or a legal opinion, and it does not establish conformity with any regulation or standard."
+      },
+      {
+        "name": "qorescan:solidity:files",
+        "value": "7"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/keccak-256",
+      "name": "Keccak-256",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 90,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 91,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 92,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 93,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 94,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 95,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 190,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 250,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWardVault.invariant.t.sol",
+            "line": 85,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWardVault.t.sol",
+            "line": 46,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWardVault.t.sol",
+            "line": 54,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWardVault.t.sol",
+            "line": 74,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWardVault.t.sol",
+            "line": 264,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          }
+        ]
+      },
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "hash",
+          "parameterSetIdentifier": "256",
+          "cryptoFunctions": [
+            "digest"
+          ],
+          "classicalSecurityLevel": 128
+        }
+      },
+      "properties": [
+        {
+          "name": "qorescan:classification",
+          "value": "symmetric"
+        },
+        {
+          "name": "qorescan:transition",
+          "value": "Not a NIST-standardised algorithm; not scheduled by NIST IR 8547"
+        },
+        {
+          "name": "qorescan:standard",
+          "value": "Keccak submission padding (as used by Ethereum), not FIPS 202"
+        },
+        {
+          "name": "qorescan:family",
+          "value": "Keccak"
+        },
+        {
+          "name": "qorescan:source",
+          "value": "solidity"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "target",
+      "dependsOn": [
+        "crypto/algorithm/keccak-256"
+      ]
+    }
+  ]
+}

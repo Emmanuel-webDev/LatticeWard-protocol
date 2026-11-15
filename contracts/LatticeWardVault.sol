@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {QorePQC} from "./libraries/QorePQC.sol";
 
 /// @title LatticeWardVault
-/// @notice Dual-plane treasury vault for autonomous agents on QoreChain.
+/// @notice Enterprise-hardened dual-plane treasury vault for autonomous agents on QoreChain.
 ///
 ///  Plane 1 (execution, classical): `agentKey` may only move funds inside a scoped window:
 ///    per-asset max-per-tx, per-asset rolling epoch cap, global expiry, asset allowlist,
 ///    advisory risk-score ceiling, replay-protected intents, and (optionally) a mandatory
-///    `pqcKeyStatus(recipient) == true` firewall.
+///    `pqcKeyStatus(recipient) == true` (0x0A02) firewall. Protected by OpenZeppelin ReentrancyGuard.
 ///
-///  Plane 2 (sovereign, ML-DSA-87): every administrative action requires an ML-DSA-87
-///    signature verified by the 0x0A01 precompile over a domain-separated digest bound to
-///    chainid, this contract, a monotonically increasing policyNonce, and the exact params.
-///    There is NO ecrecover and NO `onlyOwner` anywhere in this contract: msg.sender carries
-///    no administrative authority, so a leaked classical key cannot administer the vault.
-contract LatticeWardVault {
+///  Plane 2 (sovereign, ML-DSA-87): every administrative and emergency action requires an ML-DSA-87
+///    signature verified via staticcall to the 0x0A01 (`pqcVerify`) precompile over a domain-separated
+///    digest bound to `block.chainid`, `address(this)`, a strictly incrementing `policyNonce` (`policyNonce++`),
+///    and the exact action parameters. There is NO `ecrecover` (0x01) fallback and NO `onlyOwner`
+///    anywhere in this contract: `msg.sender` carries zero administrative authority, so a leaked
+///    classical secp256k1 private key cannot escalate privileges, alter policy, or drain the treasury.
+contract LatticeWardVault is ReentrancyGuard {
     // ───────────────────────────── errors ─────────────────────────────
     error NotAgent();
     error VaultFrozen();
@@ -32,7 +34,6 @@ contract LatticeWardVault {
     error InvalidMLDSASignature();
     error InvalidPolicy();
     error TransferFailed();
-    error Reentrancy();
     error ZeroAddress();
     error InvalidRecipient(address recipient);
 
@@ -85,6 +86,9 @@ contract LatticeWardVault {
     }
 
     // ───────────────────────────── state ──────────────────────────────
+    address public constant PQC_VERIFY_PRECOMPILE = address(uint160(0x0A01));
+    address public constant PQC_KEY_STATUS_PRECOMPILE = address(uint160(0x0A02));
+
     uint256 public constant MAX_EPOCH_DURATION = 365 days; // bounds epoch math; huge values could overflow/DoS the agent lane
     uint256 public constant MAX_RISK_SCORE_BPS = 10_000;
     bytes32 public constant DOMAIN = keccak256("LatticeWard.Sovereign.v1");
@@ -106,8 +110,6 @@ contract LatticeWardVault {
     mapping(address => AssetLimit) public assetLimits;
     mapping(bytes32 => bool) public usedIntents;
 
-    uint256 private _lock = 1;
-
     // ───────────────────────────── events ─────────────────────────────
     event Deposited(address indexed from, uint256 amount);
     event AuthenticatedAgentIntentExecuted(
@@ -124,13 +126,6 @@ contract LatticeWardVault {
     event SovereignWithdrawal(address indexed asset, address indexed to, uint256 amount);
     event EmergencyClawback(address indexed oldAgent, address indexed newAgent, address indexed rescue);
     event SovereignKeyRotated(bytes32 oldHash, bytes32 newHash);
-
-    modifier nonReentrant() {
-        if (_lock != 1) revert Reentrancy();
-        _lock = 2;
-        _;
-        _lock = 1;
-    }
 
     // ─────────────────────────── constructor ──────────────────────────
     constructor(bytes32 sovereignKeyHash_, PolicyUpdate memory p, AssetUpdate[] memory initialAssets) {
@@ -168,12 +163,12 @@ contract LatticeWardVault {
         uint256 newSpent = lim.epochSpent + env.value;
         if (newSpent > lim.epochLimit) revert ExceedsEpochSpendLimit(newSpent, lim.epochLimit);
 
-        // 0x0A02 outbound post-quantum firewall (fail-closed).
-        if (requireRecipientPqc && !QorePQC.isRegistered(env.recipient)) {
+        // 0x0A02 outbound post-quantum firewall (fail-closed staticcall via QorePQC).
+        if (requireRecipientPqc && !_checkPqcKeyStatus(env.recipient)) {
             revert RecipientNotQuantumSafe(env.recipient);
         }
 
-        // effects before interaction
+        // Checks-Effects-Interactions: state updates committed before outbound transfer.
         usedIntents[env.intentId] = true;
         lim.epochSpent = newSpent;
 
@@ -186,6 +181,8 @@ contract LatticeWardVault {
 
     // ──────────────── Plane 2: ML-DSA-87 sovereign actions ────────────
     /// @notice Digest that the sovereign must sign for the next action with this tag and params.
+    /// @dev Strictly binds every off-chain ML-DSA-87 signature to `block.chainid`, `address(this)`,
+    ///      the current `policyNonce`, the action `tag`, and `keccak256(params)`.
     function sovereignDigest(bytes32 tag, bytes memory params) public view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN, block.chainid, address(this), policyNonce, tag, keccak256(params)));
     }
@@ -210,30 +207,27 @@ contract LatticeWardVault {
     {
         _authorizeSovereign(TAG_WITHDRAW, abi.encode(w), mldsaPublicKey, mldsaSignature);
         if (w.to == address(0) || w.to == address(this)) revert InvalidRecipient(w.to);
-        if (requireRecipientPqc && !QorePQC.isRegistered(w.to)) revert RecipientNotQuantumSafe(w.to);
+        if (requireRecipientPqc && !_checkPqcKeyStatus(w.to)) revert RecipientNotQuantumSafe(w.to);
         _send(w.asset, w.to, w.amount);
         emit SovereignWithdrawal(w.asset, w.to, w.amount);
     }
 
-    /// @notice Q-Day emergency: revoke the compromised agent key, freeze, optionally sweep to a PQC-safe address.
+    /// @notice Q-Day emergency clawback: revoke the compromised classical agent key, freeze the vault,
+    ///         and optionally sweep all listed assets to a quantum-safe (0x0A02-verified) rescue address.
+    function triggerQDayEmergencyClawback(
+        Clawback calldata c,
+        bytes calldata mldsaPublicKey,
+        bytes calldata mldsaSignature
+    ) external nonReentrant {
+        _executeEmergencyClawback(c, mldsaPublicKey, mldsaSignature);
+    }
+
+    /// @notice Alias for `triggerQDayEmergencyClawback` preserving ABI compatibility with existing MCP tooling.
     function emergencyClawback(Clawback calldata c, bytes calldata mldsaPublicKey, bytes calldata mldsaSignature)
         external
         nonReentrant
     {
-        _authorizeSovereign(TAG_CLAWBACK, abi.encode(c), mldsaPublicKey, mldsaSignature);
-        address old = agentKey;
-        agentKey = c.newAgent;
-        frozen = true;
-        if (c.rescue != address(0)) {
-            if (c.rescue == address(this)) revert InvalidRecipient(c.rescue);
-            if (!QorePQC.isRegistered(c.rescue)) revert RecipientNotQuantumSafe(c.rescue);
-            for (uint256 i = 0; i < c.assets.length; i++) {
-                address a = c.assets[i];
-                uint256 bal = a == address(0) ? address(this).balance : _erc20Balance(a);
-                if (bal > 0) _send(a, c.rescue, bal);
-            }
-        }
-        emit EmergencyClawback(old, c.newAgent, c.rescue);
+        _executeEmergencyClawback(c, mldsaPublicKey, mldsaSignature);
     }
 
     function rotateSovereignKey(bytes32 newHash, bytes calldata mldsaPublicKey, bytes calldata mldsaSignature)
@@ -246,12 +240,46 @@ contract LatticeWardVault {
     }
 
     // ───────────────────────────── internals ──────────────────────────
+    function _executeEmergencyClawback(
+        Clawback calldata c,
+        bytes calldata mldsaPublicKey,
+        bytes calldata mldsaSignature
+    ) internal {
+        _authorizeSovereign(TAG_CLAWBACK, abi.encode(c), mldsaPublicKey, mldsaSignature);
+        address old = agentKey;
+        agentKey = c.newAgent;
+        frozen = true;
+        if (c.rescue != address(0)) {
+            if (c.rescue == address(this)) revert InvalidRecipient(c.rescue);
+            if (!_checkPqcKeyStatus(c.rescue)) revert RecipientNotQuantumSafe(c.rescue);
+            for (uint256 i = 0; i < c.assets.length; i++) {
+                address a = c.assets[i];
+                uint256 bal = a == address(0) ? address(this).balance : _erc20Balance(a);
+                if (bal > 0) _send(a, c.rescue, bal);
+            }
+        }
+        emit EmergencyClawback(old, c.newAgent, c.rescue);
+    }
+
+    /// @dev Verifies the sovereign ML-DSA-87 public key and signature via precompile 0x0A01 (`pqcVerify`)
+    ///      and strictly increments `policyNonce++` to prevent signature replay across actions or chains.
+    ///      No `ecrecover` (0x01) fallback exists.
     function _authorizeSovereign(bytes32 tag, bytes memory params, bytes calldata pk, bytes calldata sig) internal {
         if (keccak256(pk) != sovereignKeyHash) revert SovereignKeyMismatch();
         bytes32 digest = sovereignDigest(tag, params);
-        if (!QorePQC.verify(pk, digest, sig)) revert InvalidMLDSASignature();
-        policyNonce += 1; // consumes the digest: every signature is single-use
+        if (!_verifyPqcSignature(pk, digest, sig)) revert InvalidMLDSASignature();
+        policyNonce++; // strictly increments nonce: consumes the digest so every signature is single-use
         emit SovereignActionAuthorized(tag, digest, policyNonce);
+    }
+
+    /// @dev Direct staticcall wrapper to precompile 0x0A01 (`pqcVerify`) via `QorePQC.verify`.
+    function _verifyPqcSignature(bytes calldata pk, bytes32 digest, bytes calldata sig) internal view returns (bool) {
+        return QorePQC.verify(pk, digest, sig);
+    }
+
+    /// @dev Direct staticcall wrapper to precompile 0x0A02 (`pqcKeyStatus`) via `QorePQC.isRegistered`.
+    function _checkPqcKeyStatus(address account) internal view returns (bool) {
+        return QorePQC.isRegistered(account);
     }
 
     function _applyPolicy(PolicyUpdate memory p) internal {

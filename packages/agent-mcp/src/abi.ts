@@ -25,6 +25,7 @@ export const VAULT_ABI = [
   `function configurePolicy(${POLICY_TUPLE} p, bytes mldsaPublicKey, bytes mldsaSignature)`,
   `function setAssetLimit(${ASSET_TUPLE} u, bytes mldsaPublicKey, bytes mldsaSignature)`,
   `function sovereignWithdraw(${WITHDRAW_TUPLE} w, bytes mldsaPublicKey, bytes mldsaSignature)`,
+  `function triggerQDayEmergencyClawback(${CLAWBACK_TUPLE} c, bytes mldsaPublicKey, bytes mldsaSignature)`,
   `function emergencyClawback(${CLAWBACK_TUPLE} c, bytes mldsaPublicKey, bytes mldsaSignature)`,
   "function rotateSovereignKey(bytes32 newHash, bytes mldsaPublicKey, bytes mldsaSignature)",
   "event AuthenticatedAgentIntentExecuted(bytes32 indexed intentId,address indexed target,address indexed recipient,uint256 value,uint256 riskScoreBps,bytes32 rationaleHash)",

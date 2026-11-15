@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:cc7867bd-383c-5e47-8bd5-3b138cf27cf2",
+  "serialNumber": "urn:uuid:64e5e08b-4ab3-5461-ada5-b5cb67715137",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-15T19:33:32Z",
+    "timestamp": "2026-11-15T20:29:51Z",
     "tools": {
       "components": [
         {
@@ -36,7 +36,7 @@
       },
       {
         "name": "qorescan:solidity:files",
-        "value": "7"
+        "value": "8"
       }
     ]
   },
@@ -47,30 +47,6 @@
       "name": "Keccak-256",
       "evidence": {
         "occurrences": [
-          {
-            "location": "LatticeWardVault.sol",
-            "line": 90,
-            "symbol": "keccak256",
-            "additionalContext": "Keccak-256 hash"
-          },
-          {
-            "location": "LatticeWardVault.sol",
-            "line": 91,
-            "symbol": "keccak256",
-            "additionalContext": "Keccak-256 hash"
-          },
-          {
-            "location": "LatticeWardVault.sol",
-            "line": 92,
-            "symbol": "keccak256",
-            "additionalContext": "Keccak-256 hash"
-          },
-          {
-            "location": "LatticeWardVault.sol",
-            "line": 93,
-            "symbol": "keccak256",
-            "additionalContext": "Keccak-256 hash"
-          },
           {
             "location": "LatticeWardVault.sol",
             "line": 94,
@@ -85,13 +61,73 @@
           },
           {
             "location": "LatticeWardVault.sol",
-            "line": 190,
+            "line": 96,
             "symbol": "keccak256",
             "additionalContext": "Keccak-256 hash"
           },
           {
             "location": "LatticeWardVault.sol",
-            "line": 250,
+            "line": 97,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 98,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 99,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 187,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 268,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 38,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 44,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 107,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 115,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 256,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 262,
             "symbol": "keccak256",
             "additionalContext": "Keccak-256 hash"
           },

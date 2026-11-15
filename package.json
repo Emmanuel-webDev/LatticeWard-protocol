@@ -28,6 +28,7 @@
     "@qorechain/sdk": "^0.14.0"
   },
   "devDependencies": {
+    "@openzeppelin/contracts": "^5.0.2",
     "@qorechain/qorescan": "^0.1.0",
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",

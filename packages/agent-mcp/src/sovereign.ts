@@ -7,6 +7,7 @@ const SPECS = {
   configurePolicy: { tag: "CONFIGURE_POLICY", tuple: POLICY_TUPLE },
   setAssetLimit: { tag: "SET_ASSET_LIMIT", tuple: ASSET_TUPLE },
   sovereignWithdraw: { tag: "SOVEREIGN_WITHDRAW", tuple: WITHDRAW_TUPLE },
+  triggerQDayEmergencyClawback: { tag: "EMERGENCY_CLAWBACK", tuple: CLAWBACK_TUPLE },
   emergencyClawback: { tag: "EMERGENCY_CLAWBACK", tuple: CLAWBACK_TUPLE },
 } as const;
 

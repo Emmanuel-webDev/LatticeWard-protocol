@@ -18,7 +18,7 @@ Funds held by `LatticeWardVault` (native QOR, fUSD); integrity of the scoped pol
 | Replay of an agent intent | revert `IntentAlreadyUsed` | per-intent id |
 | Replay of a sovereign signature | revert | digest includes monotonically increasing `policyNonce`, chainid, vault address |
 | Tampering with signed params | revert | digest commits to `keccak256(abi.encode(params))` |
-| Compromised agent key persists | revoked in one tx | `emergencyClawback` (ML-DSA-signed) |
+| Compromised agent key persists | revoked in one tx | `triggerQDayEmergencyClawback` (ML-DSA-signed) |
 
 ## What it does NOT guarantee (be honest in the demo)
 - **The agent key can still spend up to its caps.** The design bounds loss; it does not make it zero. Keep caps small.

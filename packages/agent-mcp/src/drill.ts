@@ -181,7 +181,7 @@ export async function runQDayDrill(): Promise<CheckResult[]> {
       requireRecipientPqc: (await vault.requireRecipientPqc()) as boolean,
     };
     const fresh = Wallet.createRandom().address;
-    const c = await sendSovereign(vault, submitter, "emergencyClawback", { newAgent: fresh, rescue: ZeroAddress, assets: [] });
+    const c = await sendSovereign(vault, submitter, "triggerQDayEmergencyClawback", { newAgent: fresh, rescue: ZeroAddress, assets: [] });
     const frozen = (await vault.frozen()) as boolean;
     const rotated = ((await vault.agentKey()) as string).toLowerCase() === fresh.toLowerCase();
     const oldAgentBlocked = (await revertName(asAgent, "executeScopedAgentIntent", [mkIntent(pqcRecipient, 1n)])) === "NotAgent";

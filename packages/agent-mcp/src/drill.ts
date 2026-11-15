@@ -79,16 +79,21 @@ export async function runQDayDrill(): Promise<CheckResult[]> {
   const fusd = env("FUSD_ADDRESS");
   const fusdContract = getFusd(provider);
   const fusdDecimals = Number(await fusdContract.decimals());
-  const minPayout = parseUnits("0.01", fusdDecimals);
+  const vaultFusdBal: bigint = await fusdContract.balanceOf(vaultAddr);
+  const vaultQorBal: bigint = await provider.getBalance(vaultAddr);
+  const targetAsset = vaultFusdBal > 0n ? fusd : ZeroAddress;
+  const targetDecimals = targetAsset === ZeroAddress ? 18 : fusdDecimals;
+  const vaultAssetBal = targetAsset === ZeroAddress ? vaultQorBal : vaultFusdBal;
+  const minPayout = parseUnits("0.01", targetDecimals);
   const pqcRecipient = env("PQC_RECIPIENT");
   const sovereignPk = env("SOVEREIGN_PK_HEX");
   const results: CheckResult[] = [];
 
-  const lim = await asAgent.assetLimits(fusd);
+  const lim = await asAgent.assetLimits(targetAsset);
   const maxTx: bigint = lim.maxTxValue;
   const mkIntent = (to: string, value: bigint) => ({
     intentId: hexlify(randomBytes(32)),
-    target: fusd,
+    target: targetAsset,
     recipient: to,
     value,
     deadline: BigInt(Math.floor(Date.now() / 1000) + 600),
@@ -139,10 +144,9 @@ export async function runQDayDrill(): Promise<CheckResult[]> {
       forged,
     ]),
   );
-  const vaultFusdBal: bigint = await getFusd(provider).balanceOf(vaultAddr);
   results.push(
     await expectRevert("4b", "Leaked ECDSA key: sovereignWithdraw entire vault (0x0A01)", "InvalidMLDSASignature", asLeaked, "sovereignWithdraw", [
-      { asset: fusd, to: leaked.address, amount: vaultFusdBal },
+      { asset: targetAsset, to: leaked.address, amount: vaultAssetBal },
       sovereignPk,
       forged,
     ]),

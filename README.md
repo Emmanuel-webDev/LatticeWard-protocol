@@ -24,6 +24,7 @@ contracts/            LatticeWardVault.sol, libraries/QorePQC.sol, interfaces/IQ
 script/Deploy.s.sol   Deploy (forge deploy script)
 packages/agent-mcp/   abi.ts, config.ts, schema.ts (Zod), pqc.ts, precompiles.ts, preflight.ts, agent.ts, drill.ts, sovereign.ts, mcp-server.ts
 scripts/              probe-precompiles.ts, check-window.ts, convert-fusd.ts, fund-vault.ts, gen-sovereign-key.ts, sovereign-cli.ts, verify-qday.ts
+index.html            Static Command Center & live read-only Q-Day attack simulator
 docs: THREAT_MODEL.md, AI_USAGE.md, DRILL_RUNBOOK.md, audits/
 ```
 
@@ -52,13 +53,17 @@ Compiled, tested, deployed, and verified live on `qorechain-diana` (Chain ID `98
 - **AI Risk Pre-flight (`packages/agent-mcp/src/preflight.ts`):** Wired to `@qorechain/sdk`'s `simulateWithRiskScore` (`@qorechain/evm`), strictly fail-closed.
 - **Live Q-Day Breach Drill (`npm run verify:qday`):** **8/8 checks PASS** on `qorechain-diana` (see [`qday-report.json`](./qday-report.json) and transaction links below).
 - **Static analysis (`@qorechain/qorescan`):** Saved to [`audits/qorescan_stage1.json`](./audits/qorescan_stage1.json). QCAI portal audit reports (`QCAI_STAGE_1_INITIAL.md` / `QCAI_STAGE_2_FINAL.md`) are not yet generated.
-- **Out of scope for v0.1:** Web Command Center UI (`packages/web`) and DCA via an allowlisted router are not implemented (v0.1 = scoped payouts + sovereign ML-DSA-87 control plane + MCP server).
+- **Web Command Center (`index.html`):** Single-file static dashboard reading the live vault on `qorechain-diana`, checking addresses via precompile `0x0A02`, and running live read-only `eth_call` attack simulations.
 
 ## Deployed addresses (`qorechain-diana`, Chain ID `9800`)
 
 - **LatticeWardVault:** `0x9697a96058555b3A0C50b2338440C84B927caB29` (`qor1j6t6jczc24dn5rzskgecgsxgfwf8e2efp7z6qp`)
   - Deploy tx: [`0xce42a4cd136064c000170a7f2d03193b1fe1f3e02e60a2094ffeb10dde6c7e84`](https://explore.qore.network/tx/0xce42a4cd136064c000170a7f2d03193b1fe1f3e02e60a2094ffeb10dde6c7e84)
   - Vault funding tx (`1.0 QOR`): [`0x62106213413a97a740c39235390fcfbcf2e3e3502dfe545c96a4b9c8e02ee4c5`](https://explore.qore.network/tx/0x62106213413a97a740c39235390fcfbcf2e3e3502dfe545c96a4b9c8e02ee4c5)
+  - Hybrid `MsgConvertCoin` txs (Cosmos lane, `eth_secp256k1` + `ML-DSA-87`):
+    - `1.0 fUSD` (Block `10156333`): `749C8D5FC198C51DF517F43479E3AFD3BE09AEFE50CC9A83EF5F528AA86FF303`
+    - `49.0 fUSD` (Block `10156945`): `244983ED2FF685777D3494003FBB69A018EABB37C193A3737AC3AEB62E922F01`
+  - Vault ERC-20 `fUSD` funding tx (`50.0 fUSD`): [`0x4df234b8fa8a22118423433839cd215c4116c4c06df2654f87cb89cbf07c2ad2`](https://explore.qore.network/tx/0x4df234b8fa8a22118423433839cd215c4116c4c06df2654f87cb89cbf07c2ad2)
 - **Sovereign ML-DSA-87 Key Hash (`sovereignKeyHash`):** `0xfc4c13af8aac8233f2566485d7ca4ba7ef53db50c07aebad3630cf2058178d23`
 - **fUSD (FestUSD, 6 decimals):** `0x97143B771D34ddb9130b807b135Ae675A5a963CA`
 - **Deployer / Submitter:** `0x480261F742b3CfA5f1659da6FAd089BDB6CFD0B3` (`qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea`)

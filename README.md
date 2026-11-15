@@ -10,8 +10,8 @@ AI agents need hot `secp256k1` keys to act without human popups. Today a prompt 
 
 | Plane | Key | Can do | Enforced by |
 |---|---|---|---|
-| Execution | disposable `secp256k1` agent key | pay out inside a scoped window: per-asset max/tx, rolling epoch cap, expiry, asset allowlist, replay-protected intents, recipient must pass `pqcKeyStatus` (`0x0A02`) | `LatticeWardVault.executeScopedAgentIntent` |
-| Sovereign | ML-DSA-87 (FIPS 204) | change policy, raise limits, withdraw, rotate keys, emergency freeze/clawback | `pqcVerify` (`0x0A01`) over a digest bound to chainid + vault + nonce + params |
+| Execution | disposable `secp256k1` `agentKey` | pay out inside a scoped window: per-asset `maxTxValue`, rolling `epochLimit`, `windowExpiresAt`, asset allowlist (`assetLimits`), replay-protected intents (`usedIntents`), recipient must pass `QorePQC.isRegistered` / `IPqcKeyStatus.pqcKeyStatus` (`0x0A02`) | `LatticeWardVault.executeScopedAgentIntent` (`nonReentrant`) |
+| Sovereign | ML-DSA-87 (FIPS 204) | `configurePolicy`, `setAssetLimit`, `sovereignWithdraw`, `triggerQDayEmergencyClawback` (`emergencyClawback`), `rotateSovereignKey` | `QorePQC.verify` / `IPqcVerify.pqcVerify` (`0x0A01`) over `sovereignDigest` bound to `block.chainid` + `address(this)` + `policyNonce` + `tag` + `keccak256(params)` |
 
 The vault has **no `ecrecover` and no `onlyOwner`**. `msg.sender` carries no admin authority, so a leaked classical key cannot administer anything.
 
@@ -20,10 +20,10 @@ Agent-side defence in depth: fail-closed Zod intent grammar -> client policy pre
 ## Repo layout
 
 ```
-contracts/            LatticeWardVault.sol, QorePQC.sol (fail-closed precompile wrappers), test mocks + Foundry tests
-script/Deploy.s.sol   forge deploy script
-packages/agent-mcp/   schema.ts (Zod), preflight.ts, agent.ts, drill.ts, sovereign.ts, mcp-server.ts
-scripts/              probe-precompiles, gen-sovereign-key, sovereign-cli, verify-qday
+contracts/            LatticeWardVault.sol, libraries/QorePQC.sol, interfaces/IQorePrecompiles.sol, test/LatticeWard.t.sol, test/LatticeWardVault.t.sol, test/LatticeWardVault.invariant.t.sol
+script/Deploy.s.sol   Deploy (forge deploy script)
+packages/agent-mcp/   abi.ts, config.ts, schema.ts (Zod), pqc.ts, precompiles.ts, preflight.ts, agent.ts, drill.ts, sovereign.ts, mcp-server.ts
+scripts/              probe-precompiles.ts, check-window.ts, convert-fusd.ts, fund-vault.ts, gen-sovereign-key.ts, sovereign-cli.ts, verify-qday.ts
 docs: THREAT_MODEL.md, AI_USAGE.md, DRILL_RUNBOOK.md, audits/
 ```
 
@@ -56,7 +56,7 @@ Compiled, tested, deployed, and verified live on `qorechain-diana` (Chain ID `98
 
 ## Deployed addresses (`qorechain-diana`, Chain ID `9800`)
 
-- **LatticeWardVault:** `0x9697a96058555b3A0C50b2338440C84B927caB29`
+- **LatticeWardVault:** `0x9697a96058555b3A0C50b2338440C84B927caB29` (`qor1j6t6jczc24dn5rzskgecgsxgfwf8e2efp7z6qp`)
   - Deploy tx: [`0xce42a4cd136064c000170a7f2d03193b1fe1f3e02e60a2094ffeb10dde6c7e84`](https://explore.qore.network/tx/0xce42a4cd136064c000170a7f2d03193b1fe1f3e02e60a2094ffeb10dde6c7e84)
   - Vault funding tx (`1.0 QOR`): [`0x62106213413a97a740c39235390fcfbcf2e3e3502dfe545c96a4b9c8e02ee4c5`](https://explore.qore.network/tx/0x62106213413a97a740c39235390fcfbcf2e3e3502dfe545c96a4b9c8e02ee4c5)
 - **Sovereign ML-DSA-87 Key Hash (`sovereignKeyHash`):** `0xfc4c13af8aac8233f2566485d7ca4ba7ef53db50c07aebad3630cf2058178d23`

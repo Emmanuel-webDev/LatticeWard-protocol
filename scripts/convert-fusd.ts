@@ -15,15 +15,17 @@ import { type TsProtoGeneratedType } from "@cosmjs/proto-signing";
 import {
   EthNativeSigner,
   type EthBroadcaster,
+  type UnifiedAccount,
   deriveUnifiedAccount,
   derivePqcLegacy,
   fetchPqcStatus,
   pqcKeyFromRecoveryCode,
-   pqcStatusPublicKey,
+  pqcStatusPublicKey,
   qorechainRegistry,
   toHex,
+  unifiedAccountFromSeed,
 } from "@qorechain/sdk";
-import { formatUnits } from "ethers";
+import { formatUnits, getBytes } from "ethers";
 import { env, getFusd, getProvider } from "../packages/agent-mcp/src/config.js";
 
 export const MSG_CONVERT_COIN_TYPE_URL = "/cosmos.evm.erc20.v1.MsgConvertCoin";
@@ -224,8 +226,17 @@ async function fetchAccountNumberAndSequence(
 
 async function main() {
   const mnemonic = process.env.DEPLOYER_MNEMONIC?.trim();
-  if (!mnemonic) {
-    console.error("ERROR: DEPLOYER_MNEMONIC is missing in .env. Please add DEPLOYER_MNEMONIC to .env and re-run.");
+  const deployerPk = process.env.DEPLOYER_PRIVATE_KEY?.trim();
+  const recoveryCode = process.env.DEPLOYER_PQC_RECOVERY_CODE?.trim();
+
+  if (!mnemonic && !(deployerPk && recoveryCode)) {
+    console.error(
+      "ERROR: MsgConvertCoin is a Cosmos-lane transaction that requires hybrid signing (secp256k1 + ML-DSA-87).\n" +
+        "DEPLOYER_PRIVATE_KEY (0x...) only contains the classical secp256k1 key and cannot derive the ML-DSA-87 key.\n" +
+        "Please add EITHER:\n" +
+        '  1) DEPLOYER_MNEMONIC="<12 or 24 word phrase>" in .env, OR\n' +
+        '  2) DEPLOYER_PQC_RECOVERY_CODE="QRC1-..." in .env (alongside DEPLOYER_PRIVATE_KEY).',
+    );
     process.exit(1);
   }
 
@@ -237,20 +248,24 @@ async function main() {
   const restUrl = process.env.QOR_REST_API?.trim() || "https://api-testnet.qore.host";
   const cosmosChainId = process.env.QOR_COSMOS_CHAIN_ID?.trim() || "qorechain-diana";
 
-  const account = await deriveUnifiedAccount(mnemonic);
-  const recoveryCode = process.env.DEPLOYER_PQC_RECOVERY_CODE?.trim();
-  if (recoveryCode) {
-    account.pqc = pqcKeyFromRecoveryCode(recoveryCode, account.cosmos);
-  } else {
-    // Check if the on-chain registered PQC key matches canonical or legacy derivation
-    const pqcStatus = await fetchPqcStatus({ rest: restUrl, address: account.cosmos });
-    const onChainPk = pqcStatusPublicKey(pqcStatus);
-    if (onChainPk && toHex(onChainPk) !== toHex(account.pqc.publicKey)) {
-      const legacyPqc = derivePqcLegacy(mnemonic);
-      if (toHex(onChainPk) === toHex(legacyPqc.publicKey)) {
-        account.pqc = legacyPqc;
+  let account: UnifiedAccount;
+  if (mnemonic) {
+    account = await deriveUnifiedAccount(mnemonic);
+    if (recoveryCode) {
+      account.pqc = pqcKeyFromRecoveryCode(recoveryCode, account.cosmos);
+    } else {
+      const pqcStatus = await fetchPqcStatus({ rest: restUrl, address: account.cosmos });
+      const onChainPk = pqcStatusPublicKey(pqcStatus);
+      if (onChainPk && toHex(onChainPk) !== toHex(account.pqc.publicKey)) {
+        const legacyPqc = derivePqcLegacy(mnemonic);
+        if (toHex(onChainPk) === toHex(legacyPqc.publicKey)) {
+          account.pqc = legacyPqc;
+        }
       }
     }
+  } else {
+    const pkHex = deployerPk!.startsWith("0x") ? deployerPk! : `0x${deployerPk!}`;
+    account = unifiedAccountFromSeed(getBytes(pkHex), { recoveryCode: recoveryCode! });
   }
 
   const provider = getProvider();

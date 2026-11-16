@@ -24,6 +24,7 @@ import {
   mapChainError,
 } from "./lib/wallets";
 import { LandingPage } from "./components/LandingPage";
+import { LogoMark } from "./components/LogoMark";
 import { LatticeKeyPanel } from "./components/LatticeKeyPanel";
 import { SetupChecklist } from "./components/SetupChecklist";
 import { CreateVaultPanel } from "./components/CreateVaultPanel";
@@ -199,7 +200,7 @@ export function App() {
               onClick={() => setMode("landing")}
               aria-label="LatticeWard home"
             >
-              <span className="brand-dot" aria-hidden="true" />
+              <LogoMark size={26} />
               <span>LatticeWard</span>
             </button>
             <button

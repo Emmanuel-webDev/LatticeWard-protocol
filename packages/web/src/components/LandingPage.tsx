@@ -1,84 +1,52 @@
 import { useEffect, useRef, useState } from "react";
-import { formatEther, formatUnits } from "ethers";
-import type { VaultSnapshot } from "../lib/chain";
-import { REFERENCE_VAULT_ADDRESS, explorerAddrUrl, explorerTxUrl } from "../lib/constants";
 
 interface Props {
-  referenceVault: VaultSnapshot | null;
   onOpenApp: () => void;
 }
 
-const DRILL_CHECKS = [
+const USE_CASES = [
   {
-    id: "1",
-    scenario: "Valid agent payout inside daily limit",
-    outcome: "Succeeded",
-    tx: "0xf176d24256d812af43b035a4eb4655156a3aadddcbd7f0332a9e170d8e69bfcc",
+    tag: "01 · Everyday Limits",
+    title: "Let your AI pay small bills, never your whole balance",
+    body: "Set a strict per-payment cap and a daily limit (the day starts at the first payment). Your AI assistant can handle routine tasks while your savings stay untouched.",
   },
   {
-    id: "2",
-    scenario: "Over-spend (10x per-payment limit)",
-    outcome: "Blocked (ExceedsScopedMaxTxValue)",
-    tx: "0xc1c7521c78a041ff91a0cdda0347cafb1568b1606f34d40a287b28a68ab5d654",
+    tag: "02 · Trick-Proof",
+    title: "Stops prompt injections at the vault door",
+    body: "Even if an AI assistant is tricked into trying to send 10x your limit or pay an unverified address, the vault rejects the payment before a single coin leaves.",
   },
   {
-    id: "3",
-    scenario: "Send to non-quantum-safe address (0x0A02)",
-    outcome: "Blocked (RecipientNotQuantumSafe)",
-    tx: "0xaee3adacd0ae5f5e530cb39552f3a820ef397318ae6af040585e546959e8bf33",
+    tag: "03 · Stolen-Key Safe",
+    title: "A leaked spending key can't rewrite your rules",
+    body: "Your agent's hot key has zero admin power. It cannot raise its own daily limit, turn off safety checks, or withdraw your vault.",
   },
   {
-    id: "4a",
-    scenario: "Leaked key tries to rewrite policy (0x0A01)",
-    outcome: "Blocked (InvalidMLDSASignature)",
-    tx: "0xc5ea37991d81a18b2af9b25ab59247df9abd3d5a33bab6d923ccbccc56f64a52",
-  },
-  {
-    id: "4b",
-    scenario: "Leaked key tries sovereign withdrawal (0x0A01)",
-    outcome: "Blocked (InvalidMLDSASignature)",
-    tx: "0xd475f3fce24190e0bd949e90058a98f7b7c4878300bd8bc23f5791d27f368f6b",
-  },
-  {
-    id: "5",
-    scenario: "Replay of an already executed payment",
-    outcome: "Blocked (IntentAlreadyUsed)",
-    tx: null,
-  },
-  {
-    id: "6a",
-    scenario: "ML-DSA-87 emergency freeze & key revocation",
-    outcome: "Frozen + Agent Revoked",
-    tx: "0x16dac29907d06ffbd1567392e0ab9c98e1d4f6661afa537a0470ed56b5edf9e0",
-  },
-  {
-    id: "6b",
-    scenario: "ML-DSA-87 recovery (unfreeze vault)",
-    outcome: "Active",
-    tx: "0x8c53a3db12e00cc51ed291e188c64b0f2b00d1a5f772bee757caa32fb74ea7da",
+    tag: "04 · Instant Pause",
+    title: "Freeze everything and recover on your terms",
+    body: "If a device is lost or an agent misbehaves, freeze your vault with your quantum-safe Lattice key. Only you can unfreeze or move your funds.",
   },
 ];
 
 const FAQS = [
   {
-    q: "What happens if my AI agent's hot key is leaked?",
-    a: "The agent key can only spend up to your per-payment and daily limits, and only to quantum-safe recipients when the 0x0A02 firewall is on. It cannot change rules, raise limits, or withdraw your treasury.",
+    q: "What happens if my AI assistant's spending key is stolen?",
+    a: "The spending key can only pay within your per-payment and daily limits, and only to quantum-safe recipients when the recipient check is on. It cannot change your rules or drain your vault.",
   },
   {
-    q: "Why do I need both QoreX and MetaMask?",
-    a: "QoreX manages your post-quantum identity and opens your EVM authorization window on QoreChain's native lane. MetaMask signs standard EVM transactions such as creating a vault or depositing funds.",
+    q: "Why do I connect both QoreX and MetaMask?",
+    a: "QoreX manages your post-quantum identity and opens your EVM spending window. MetaMask signs standard transactions such as creating your personal vault or depositing funds.",
   },
   {
-    q: "Where is my Lattice key stored?",
-    a: "Your ML-DSA-87 Lattice key is generated randomly in your browser, encrypted with your passphrase (PBKDF2 + AES-GCM), and stored locally in IndexedDB. You must download and confirm an encrypted backup file before creating your first vault.",
+    q: "Where is my Master Lattice Key stored?",
+    a: "It is generated in your browser, encrypted with your passphrase, and saved locally. Before creating your first vault, you download an encrypted backup file so you stay in full control.",
   },
   {
     q: "What does 'daily limit' mean?",
-    a: "Your daily limit caps total spending over a 24-hour window. The day starts at the first payment.",
+    a: "Your daily limit caps total spending over a 24-hour period. The day starts at the first payment.",
   },
 ];
 
-export function LandingPage({ referenceVault, onOpenApp }: Props) {
+export function LandingPage({ onOpenApp }: Props) {
   const [activePlane, setActivePlane] = useState<1 | 2>(1);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const plane1Ref = useRef<HTMLDivElement | null>(null);
@@ -109,105 +77,81 @@ export function LandingPage({ referenceVault, onOpenApp }: Props) {
     <div className="landing-wrap">
       {/* 1. Hero */}
       <section className="hero-section" aria-labelledby="hero-heading">
-        <div className="eyebrow">QoreChain Diana Testnet · Chain ID 9800 · Testnet Prototype</div>
+        <div className="eyebrow">Post-Quantum Treasury Vault · QoreChain Testnet</div>
         <h1 id="hero-heading" className="hero-title hero-reveal">
           Agents spend. Quantum can&apos;t steal.
         </h1>
         <p className="hero-sub">
-          LatticeWard splits your AI agent&apos;s hot spending key from your post-quantum Lattice key so a leaked
-          classical key or Q-Day cannot drain funds in your vault.
+          Give your AI assistant a strict daily allowance while keeping your vault locked behind a quantum-safe
+          recovery key. Funds in your vault are protected even if a hot key leaks.
         </p>
         <div className="row-wrap">
           <button type="button" className="btn btn-primary" onClick={onOpenApp}>
-            Open the app
+            Create your vault
           </button>
-          <a className="btn" href="#live-proof">
-            See the live proof
+          <a className="btn" href="#how-it-works">
+            How it works
           </a>
         </div>
 
-        {/* Live strip of real reference vault facts */}
-        <div style={{ marginTop: 40 }}>
-          <div className="eyebrow" style={{ marginBottom: 8 }}>
-            Live Public Reference Vault ({REFERENCE_VAULT_ADDRESS.slice(0, 8)}...{REFERENCE_VAULT_ADDRESS.slice(-6)}) ·
-            Shared Demo (Not Your Personal Vault)
+        {/* Consumer Safeguards Strip */}
+        <div className="live-strip" aria-label="Key vault safeguards">
+          <div className="live-cell">
+            <div className="eyebrow">Daily Allowance</div>
+            <div style={{ fontWeight: 600, marginTop: 8 }}>Cap per payment &amp; per day</div>
           </div>
-          <div className="live-strip" style={{ marginTop: 0 }} aria-label="Live public reference vault state on QoreChain Diana">
-            <div className="live-cell">
-              <div className="eyebrow">Demo Vault State</div>
-              <div style={{ marginTop: 8 }}>
-                {referenceVault ? (
-                  <span className={`badge ${referenceVault.frozen ? "badge-danger" : "badge-safe"}`}>
-                    {referenceVault.frozen ? "❄ Frozen" : "● Active"}
-                  </span>
-                ) : (
-                  <span className="muted">Reading chain...</span>
-                )}
-              </div>
-            </div>
-            <div className="live-cell">
-              <div className="eyebrow">Demo QOR Balance</div>
-              <div className="big-metric tabular" style={{ marginTop: 4 }}>
-                {referenceVault ? `${Number(formatEther(referenceVault.qorBalance)).toFixed(3)} QOR` : "—"}
-              </div>
-            </div>
-            <div className="live-cell">
-              <div className="eyebrow">Demo ERC-20 fUSD</div>
-              <div className="big-metric tabular" style={{ marginTop: 4 }}>
-                {referenceVault
-                  ? `${Number(formatUnits(referenceVault.fusdBalance, referenceVault.fusdDecimals)).toFixed(1)} fUSD`
-                  : "—"}
-              </div>
-            </div>
-            <div className="live-cell">
-              <div className="eyebrow">Demo QOR Daily Limit</div>
-              <div className="big-metric tabular" style={{ marginTop: 4 }}>
-                {referenceVault ? `${formatEther(referenceVault.qorLimit.epochLimit)} QOR` : "—"}
-              </div>
-            </div>
+          <div className="live-cell">
+            <div className="eyebrow">Recipient Check</div>
+            <div style={{ fontWeight: 600, marginTop: 8 }}>Blocks unsafe addresses</div>
+          </div>
+          <div className="live-cell">
+            <div className="eyebrow">Emergency Freeze</div>
+            <div style={{ fontWeight: 600, marginTop: 8 }}>Pause spending anytime</div>
+          </div>
+          <div className="live-cell">
+            <div className="eyebrow">Your Own Vault</div>
+            <div style={{ fontWeight: 600, marginTop: 8 }}>Isolated, only you control it</div>
           </div>
         </div>
       </section>
 
-      {/* 2. Two Planes Explainer (Sticky Scroll + Hairline Diagram) */}
+      {/* 2. Two Planes Explainer */}
       <section className="planes-section" aria-labelledby="planes-heading">
-        <div className="eyebrow">Architecture</div>
+        <div className="eyebrow">Why It Works</div>
         <h2 id="planes-heading" style={{ fontSize: "clamp(1.75rem, 4vw, 2.5rem)", margin: "8px 0 24px" }}>
-          Two planes of authority.
+          Two separate keys. Two levels of trust.
         </h2>
 
         <div className="planes-grid">
           <div>
             <div ref={plane1Ref} className={`plane-step ${activePlane === 1 ? "is-active" : ""}`}>
-              <div className="eyebrow">Plane 1 · Execution</div>
-              <h3 style={{ marginTop: 8 }}>Disposable classical agent key</h3>
+              <div className="eyebrow">Key 1 · Everyday Spending</div>
+              <h3 style={{ marginTop: 8 }}>A limited allowance for your AI assistant</h3>
               <p className="muted">
-                Your AI agent signs routine payouts with a hot <code>secp256k1</code> key. Every payout is bounded
-                on-chain by a per-payment cap, a rolling daily limit, an asset allowlist, replay protection, and the{" "}
-                <code>0x0A02</code> quantum-safety recipient firewall.
+                Your assistant uses a disposable spending key for routine payments. It can never spend more than your
+                per-payment cap or daily limit, and can only pay quantum-safe recipients.
               </p>
               <button type="button" className="btn" onClick={() => setActivePlane(1)}>
-                Inspect Plane 1
+                See Spending Key
               </button>
             </div>
 
             <div ref={plane2Ref} className={`plane-step ${activePlane === 2 ? "is-active" : ""}`}>
-              <div className="eyebrow">Plane 2 · Sovereign</div>
-              <h3 style={{ marginTop: 8 }}>Post-quantum ML-DSA-87 control</h3>
+              <div className="eyebrow">Key 2 · Master Recovery</div>
+              <h3 style={{ marginTop: 8 }}>Quantum-safe lock for rules &amp; recovery</h3>
               <p className="muted">
-                Changing limits, rotating keys, freezing the vault, or withdrawing treasury funds requires a 4,627-byte
-                ML-DSA-87 signature verified on-chain by precompile <code>0x0A01</code>. There is no{" "}
-                <code>ecrecover</code> and no <code>onlyOwner</code>.
+                Changing daily limits, freezing your vault, or withdrawing your balance requires your post-quantum
+                Lattice key. Nobody else—not even the vault creator contract—can override it.
               </p>
               <button type="button" className="btn" onClick={() => setActivePlane(2)}>
-                Inspect Plane 2
+                See Master Key
               </button>
             </div>
           </div>
 
           <div className="planes-sticky card" aria-live="polite">
             <div className="eyebrow">
-              {activePlane === 1 ? "Active Diagram · Plane 1 (Scoped Spend)" : "Active Diagram · Plane 2 (Sovereign ML-DSA-87)"}
+              {activePlane === 1 ? "Spending Key (Limited)" : "Master Lattice Key (Full Control)"}
             </div>
             <svg
               viewBox="0 0 420 260"
@@ -215,8 +159,8 @@ export function LandingPage({ referenceVault, onOpenApp }: Props) {
               role="img"
               aria-label={
                 activePlane === 1
-                  ? "Diagram showing disposable agent key constrained by daily limits and 0x0A02 firewall"
-                  : "Diagram showing sovereign ML-DSA-87 key verified by 0x0A01 precompile controlling vault policy"
+                  ? "Diagram showing everyday spending key limited by daily caps and recipient checks"
+                  : "Diagram showing post-quantum Master Lattice Key controlling vault rules and freeze"
               }
               style={{ marginTop: 16, display: "block" }}
             >
@@ -231,10 +175,10 @@ export function LandingPage({ referenceVault, onOpenApp }: Props) {
                 strokeWidth="1.5"
               />
               <text x="30" y="46" fill="var(--text)" fontSize="12" fontWeight="600">
-                Agent Key (secp256k1)
+                Spending Key
               </text>
               <text x="30" y="66" fill="var(--text-muted)" fontSize="11">
-                Hot · Disposable · Scoped
+                Routine AI payouts only
               </text>
 
               <rect
@@ -248,10 +192,10 @@ export function LandingPage({ referenceVault, onOpenApp }: Props) {
                 strokeWidth="1.5"
               />
               <text x="30" y="194" fill="var(--text)" fontSize="12" fontWeight="600">
-                Lattice Key (ML-DSA-87)
+                Master Lattice Key
               </text>
               <text x="30" y="214" fill="var(--text-muted)" fontSize="11">
-                Sovereign · FIPS 204 · 4,627 B
+                Quantum-safe · Encrypted
               </text>
 
               <line
@@ -282,102 +226,72 @@ export function LandingPage({ referenceVault, onOpenApp }: Props) {
                 strokeWidth="1.5"
               />
               <text x="258" y="90" fill="var(--text)" fontSize="13" fontWeight="700">
-                LatticeWardVault
+                Your Personal Vault
               </text>
               <text x="258" y="116" fill="var(--text-muted)" fontSize="11">
-                {activePlane === 1 ? "• Daily limit + per-tx cap" : "• 0x0A01 pqcVerify"}
+                {activePlane === 1 ? "• Per-payment & daily cap" : "• Update daily limits"}
               </text>
               <text x="258" y="138" fill="var(--text-muted)" fontSize="11">
-                {activePlane === 1 ? "• 0x0A02 recipient check" : "• Freeze / Unfreeze"}
+                {activePlane === 1 ? "• Quantum-safe recipients" : "• Instant freeze / unfreeze"}
               </text>
               <text x="258" y="160" fill="var(--text-muted)" fontSize="11">
-                {activePlane === 1 ? "• Replay-safe intents" : "• No ecrecover / onlyOwner"}
+                {activePlane === 1 ? "• Cannot change rules" : "• Withdraw anytime"}
               </text>
             </svg>
           </div>
         </div>
       </section>
 
-      {/* 3. Live Proof Table */}
-      <section id="live-proof" className="proof-section" aria-labelledby="proof-heading">
-        <div className="row-wrap" style={{ justifyContent: "space-between", marginBottom: 16 }}>
-          <div>
-            <div className="eyebrow">On-Chain Verification</div>
-            <h2 id="proof-heading" style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.25rem)", margin: "6px 0 0" }}>
-              Live Q-Day Breach Drill (8/8 Passed)
-            </h2>
-          </div>
-          <a className="btn" href={explorerAddrUrl(REFERENCE_VAULT_ADDRESS)} target="_blank" rel="noreferrer">
-            Inspect Drilled Vault
-          </a>
-        </div>
-
-        <div style={{ overflowX: "auto" }}>
-          <table className="hairline-table">
-            <thead>
-              <tr>
-                <th>Check</th>
-                <th>Scenario</th>
-                <th>On-Chain Result</th>
-                <th>Transaction</th>
-              </tr>
-            </thead>
-            <tbody>
-              {DRILL_CHECKS.map((c) => (
-                <tr key={c.id} className="hairline-row">
-                  <td className="tabular">
-                    <strong>{c.id}</strong>
-                  </td>
-                  <td>{c.scenario}</td>
-                  <td>
-                    <span className="badge badge-safe">✓ {c.outcome}</span>
-                  </td>
-                  <td>
-                    {c.tx ? (
-                      <a href={explorerTxUrl(c.tx)} target="_blank" rel="noreferrer" className="mono">
-                        {c.tx.slice(0, 10)}...{c.tx.slice(-6)}
-                      </a>
-                    ) : (
-                      <span className="muted">staticCall verified</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* 3. Real-Life Protection Scenarios */}
+      <section className="proof-section" aria-labelledby="scenarios-heading">
+        <div className="eyebrow">Built For Real Risks</div>
+        <h2 id="scenarios-heading" style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.25rem)", margin: "6px 0 24px" }}>
+          What your vault protects you against
+        </h2>
+        <div className="grid-2">
+          {USE_CASES.map((u) => (
+            <div key={u.tag} className="card hairline-row" style={{ marginBottom: 0 }}>
+              <div className="eyebrow">{u.tag}</div>
+              <h3 style={{ marginTop: 8 }}>{u.title}</h3>
+              <p className="muted" style={{ marginBottom: 0 }}>
+                {u.body}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* 4. How It Works (4 Steps) + FAQ + Honest Status + Footer */}
-      <section className="steps-section" aria-labelledby="how-heading">
-        <div className="eyebrow">Workflow</div>
+      {/* 4. How It Works (4 Steps) */}
+      <section id="how-it-works" className="steps-section" aria-labelledby="how-heading">
+        <div className="eyebrow">Getting Started</div>
         <h2 id="how-heading" style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.25rem)", margin: "6px 0 24px" }}>
-          How it works in 4 steps
+          Up and running in 4 steps
         </h2>
         <div className="grid-2">
           <div className="card">
             <div className="eyebrow">Step 01</div>
             <h3>Connect QoreX &amp; MetaMask</h3>
-            <p className="muted">QoreX opens your EVM authorization window; MetaMask sends EVM transactions.</p>
+            <p className="muted">QoreX opens your spending window; MetaMask lets you sign transactions in the browser.</p>
           </div>
           <div className="card">
             <div className="eyebrow">Step 02</div>
-            <h3>Create &amp; Back Up Your Lattice Key</h3>
-            <p className="muted">Generate an encrypted ML-DSA-87 key in your browser and save your backup file.</p>
+            <h3>Save Your Master Lattice Key</h3>
+            <p className="muted">Create an encrypted post-quantum key and download your backup file to keep it safe.</p>
           </div>
           <div className="card">
             <div className="eyebrow">Step 03</div>
-            <h3>Deploy Your Isolated Vault</h3>
-            <p className="muted">Deploy your own vault from VaultFactory with daily limits and the 0x0A02 firewall.</p>
+            <h3>Create Your Personal Vault</h3>
+            <p className="muted">Deploy your own vault with your chosen daily allowance and recipient safety check.</p>
           </div>
           <div className="card">
             <div className="eyebrow">Step 04</div>
-            <h3>Fund, Monitor &amp; Freeze Anytime</h3>
-            <p className="muted">Deposit QOR or ERC-20 fUSD, test attacks read-only, or freeze instantly if needed.</p>
+            <h3>Fund, Adjust Limits, or Freeze</h3>
+            <p className="muted">Deposit QOR or fUSD, review activity anytime, and freeze immediately if you ever need to.</p>
           </div>
         </div>
       </section>
 
+      {/* 5. FAQ */}
       <section className="faq-section" aria-labelledby="faq-heading">
         <div className="eyebrow">Questions</div>
         <h2 id="faq-heading" style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.25rem)", margin: "6px 0 16px" }}>
@@ -403,28 +317,11 @@ export function LandingPage({ referenceVault, onOpenApp }: Props) {
         ))}
       </section>
 
-      <section className="card" style={{ marginTop: 32 }} aria-labelledby="honest-heading">
-        <div className="eyebrow">Honest Scope</div>
-        <h2 id="honest-heading" style={{ marginTop: 6 }}>
-          Testnet prototype — what&apos;s not done yet
-        </h2>
-        <ul className="muted" style={{ paddingLeft: 20, marginBottom: 0 }}>
-          <li>Runs on QoreChain Diana testnet (Chain ID 9800) only; smart contracts are unaudited.</li>
-          <li>QoreX arbitrary ML-DSA message signing (<code>signArbitrary</code>) has not shipped yet, so sovereign signing uses the encrypted browser Lattice key.</li>
-          <li>Stateless relayer code exists in <code>packages/relayer</code>; until hosted, sovereign actions fall back to MetaMask submission.</li>
-        </ul>
-      </section>
-
       <footer className="site-footer">
         <span>LatticeWard · Testnet Prototype · MIT License</span>
-        <div className="row-wrap">
-          <a href="https://github.com/Emmanuel-webDev/LatticeWard-protocol" target="_blank" rel="noreferrer">
-            GitHub Source
-          </a>
-          <button type="button" className="btn" onClick={onOpenApp}>
-            Launch App
-          </button>
-        </div>
+        <a href="https://github.com/Emmanuel-webDev/LatticeWard-protocol" target="_blank" rel="noreferrer">
+          GitHub Source
+        </a>
       </footer>
     </div>
   );

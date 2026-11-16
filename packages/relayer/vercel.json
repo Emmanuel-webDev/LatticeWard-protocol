@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/api/relay", "destination": "/api/relay" },
+    { "source": "/api/evm-window/(.*)", "destination": "/api/evm-window/$1" }
+  ]
+}

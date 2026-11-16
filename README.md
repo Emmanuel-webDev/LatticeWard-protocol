@@ -23,9 +23,11 @@ Agent-side defence in depth: fail-closed Zod intent grammar -> client policy pre
 contracts/            LatticeWardVault.sol, VaultFactory.sol, libraries/QorePQC.sol, interfaces/IQorePrecompiles.sol, test/LatticeWard.t.sol, test/LatticeWardVault.t.sol, test/LatticeWardVault.invariant.t.sol, test/VaultFactory.t.sol
 script/               Deploy.s.sol, DeployFactory.s.sol
 packages/agent-mcp/   abi.ts, config.ts, schema.ts (Zod), pqc.ts, precompiles.ts, preflight.ts, agent.ts, drill.ts, sovereign.ts, mcp-server.ts
+packages/web/         Vite + React + TypeScript per-user vault UI (GitHub Pages ready)
+packages/relayer/     Stateless serverless relayer + CORS evm-window proxy (Vercel)
 scripts/              probe-precompiles.ts, check-window.ts, convert-fusd.ts, fund-vault.ts, gen-sovereign-key.ts, sovereign-cli.ts, verify-qday.ts
 index.html            Static Command Center & live read-only Q-Day attack simulator
-docs: THREAT_MODEL.md, AI_USAGE.md, DRILL_RUNBOOK.md, audits/
+docs: THREAT_MODEL.md, AI_USAGE.md, DRILL_RUNBOOK.md, USABILITY_TEST.md, audits/
 ```
 
 ## Quickstart

@@ -20,8 +20,8 @@ Agent-side defence in depth: fail-closed Zod intent grammar -> client policy pre
 ## Repo layout
 
 ```
-contracts/            LatticeWardVault.sol, libraries/QorePQC.sol, interfaces/IQorePrecompiles.sol, test/LatticeWard.t.sol, test/LatticeWardVault.t.sol, test/LatticeWardVault.invariant.t.sol
-script/Deploy.s.sol   Deploy (forge deploy script)
+contracts/            LatticeWardVault.sol, VaultFactory.sol, libraries/QorePQC.sol, interfaces/IQorePrecompiles.sol, test/LatticeWard.t.sol, test/LatticeWardVault.t.sol, test/LatticeWardVault.invariant.t.sol, test/VaultFactory.t.sol
+script/               Deploy.s.sol, DeployFactory.s.sol
 packages/agent-mcp/   abi.ts, config.ts, schema.ts (Zod), pqc.ts, precompiles.ts, preflight.ts, agent.ts, drill.ts, sovereign.ts, mcp-server.ts
 scripts/              probe-precompiles.ts, check-window.ts, convert-fusd.ts, fund-vault.ts, gen-sovereign-key.ts, sovereign-cli.ts, verify-qday.ts
 index.html            Static Command Center & live read-only Q-Day attack simulator
@@ -47,7 +47,7 @@ npm run mcp                       # MCP server over stdio (Claude Desktop / Curs
 
 Compiled, tested, deployed, and verified live on `qorechain-diana` (Chain ID `9800`):
 
-- **Foundry tests (`forge test -vv`):** 32/32 passing (30 unit/fuzz/hardening tests across `LatticeWard.t.sol` and `LatticeWardVault.t.sol` + 2 invariant suites at 512 runs / 256,000 calls).
+- **Foundry tests (`forge test -vv`):** 36/36 passing (unit/fuzz/hardening tests across `LatticeWard.t.sol`, `LatticeWardVault.t.sol`, and `VaultFactory.t.sol` + 2 invariant suites at 512 runs / 256,000 calls each).
 - **TypeScript (`npm run typecheck`):** 0 errors.
 - **Precompile ABI probe (`npm run probe`):** Confirmed live `0x0A02` (`pqcKeyStatus`) and `0x0A01` (`pqcVerify`) on `qorechain-diana`. `0x0A01` uses `(bytes publicKey, bytes signature, bytes message)` argument order (`QorePQC.sol`, `IQorePrecompiles.sol`, and `MockPQC.sol` updated accordingly).
 - **AI Risk Pre-flight (`packages/agent-mcp/src/preflight.ts`):** Wired to `@qorechain/sdk`'s `simulateWithRiskScore` (`@qorechain/evm`), strictly fail-closed.
@@ -57,7 +57,9 @@ Compiled, tested, deployed, and verified live on `qorechain-diana` (Chain ID `98
 
 ## Deployed addresses (`qorechain-diana`, Chain ID `9800`)
 
-- **LatticeWardVault:** `0x9697a96058555b3A0C50b2338440C84B927caB29` (`qor1j6t6jczc24dn5rzskgecgsxgfwf8e2efp7z6qp`)
+- **VaultFactory (per-user vault deployer):** `0xAEdE5a3B09c9BDC749297C39826C6DDdaF311C5c`
+  - Deploy tx: [`0xea6b9acd6908ea7294e57087ba6448e340685509525f50b49cdc283d3ed594ff`](https://explore.qore.network/tx/0xea6b9acd6908ea7294e57087ba6448e340685509525f50b49cdc283d3ed594ff)
+- **LatticeWardVault (drilled reference vault):** `0x9697a96058555b3A0C50b2338440C84B927caB29` (`qor1j6t6jczc24dn5rzskgecgsxgfwf8e2efp7z6qp`)
   - Deploy tx: [`0xce42a4cd136064c000170a7f2d03193b1fe1f3e02e60a2094ffeb10dde6c7e84`](https://explore.qore.network/tx/0xce42a4cd136064c000170a7f2d03193b1fe1f3e02e60a2094ffeb10dde6c7e84)
   - Vault funding tx (`1.0 QOR`): [`0x62106213413a97a740c39235390fcfbcf2e3e3502dfe545c96a4b9c8e02ee4c5`](https://explore.qore.network/tx/0x62106213413a97a740c39235390fcfbcf2e3e3502dfe545c96a4b9c8e02ee4c5)
   - Hybrid `MsgConvertCoin` txs (Cosmos lane, `eth_secp256k1` + `ML-DSA-87`):

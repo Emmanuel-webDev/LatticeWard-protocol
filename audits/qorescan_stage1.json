@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:64e5e08b-4ab3-5461-ada5-b5cb67715137",
+  "serialNumber": "urn:uuid:21b1c2da-81e1-5501-9ce2-c12eea9d84f3",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-15T20:29:51Z",
+    "timestamp": "2026-11-16T08:49:14Z",
     "tools": {
       "components": [
         {
@@ -36,7 +36,7 @@
       },
       {
         "name": "qorescan:solidity:files",
-        "value": "8"
+        "value": "10"
       }
     ]
   },
@@ -158,6 +158,72 @@
           {
             "location": "test/LatticeWardVault.t.sol",
             "line": 264,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/VaultFactory.t.sol",
+            "line": 34,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/VaultFactory.t.sol",
+            "line": 73,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/VaultFactory.t.sol",
+            "line": 76,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/VaultFactory.t.sol",
+            "line": 87,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/VaultFactory.t.sol",
+            "line": 88,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/VaultFactory.t.sol",
+            "line": 94,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/VaultFactory.t.sol",
+            "line": 126,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/VaultFactory.t.sol",
+            "line": 131,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/VaultFactory.t.sol",
+            "line": 137,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/VaultFactory.t.sol",
+            "line": 181,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/VaultFactory.t.sol",
+            "line": 224,
             "symbol": "keccak256",
             "additionalContext": "Keccak-256 hash"
           }

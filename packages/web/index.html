@@ -6,8 +6,21 @@
     <title>LatticeWard — Post-Quantum Treasury Vault (Testnet Prototype)</title>
     <meta
       name="description"
-      content="Create and manage isolated post-quantum LatticeWard treasury vaults on QoreChain Diana Testnet."
+      content="Agents spend. Quantum can't steal. Post-quantum spend-governance vaults on QoreChain Diana Testnet."
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        var saved = localStorage.getItem("lw_theme");
+        var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.setAttribute("data-theme", saved || (prefersDark ? "dark" : "light"));
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

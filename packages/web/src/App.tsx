@@ -23,17 +23,37 @@ import {
   connectQoreX,
   mapChainError,
 } from "./lib/wallets";
+import { LandingPage } from "./components/LandingPage";
 import { LatticeKeyPanel } from "./components/LatticeKeyPanel";
 import { SetupChecklist } from "./components/SetupChecklist";
 import { CreateVaultPanel } from "./components/CreateVaultPanel";
 import { DashboardPanel } from "./components/DashboardPanel";
+import { EmergencyPanel } from "./components/EmergencyPanel";
 import { AllowancesPanel } from "./components/AllowancesPanel";
 import { AgentAccountPanel, AttackLabPanel, GlossaryPanel } from "./components/AgentAndAttackPanels";
 
-type TabId = "setup" | "dashboard" | "create" | "allowances" | "agent" | "attack" | "glossary";
+type ViewMode = "landing" | "app";
+type TabId = "setup" | "dashboard" | "create" | "allowances" | "agent" | "emergency" | "attack" | "glossary";
+
+const APP_TABS: [TabId, string][] = [
+  ["setup", "Setup"],
+  ["dashboard", "Dashboard"],
+  ["create", "Create Vault"],
+  ["allowances", "Allowances"],
+  ["agent", "Agent"],
+  ["emergency", "Emergency"],
+  ["attack", "Attack Lab"],
+  ["glossary", "Glossary"],
+];
 
 export function App() {
+  const [mode, setMode] = useState<ViewMode>("landing");
   const [tab, setTab] = useState<TabId>("setup");
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const attr = document.documentElement.getAttribute("data-theme");
+    return attr === "dark" ? "dark" : "light";
+  });
+
   const [qorex, setQorex] = useState<QoreXConnection | null>(null);
   const [metamask, setMetamask] = useState<MetaMaskConnection | null>(null);
   const [pqcStatus, setPqcStatus] = useState<PqcStatus | null>(null);
@@ -55,6 +75,13 @@ export function App() {
   const [walletInfo, setWalletInfo] = useState<string | null>(null);
 
   const activeAddress = metamask?.address || qorex?.evmAddress || "";
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("lw_theme", next);
+  };
 
   useEffect(() => {
     void loadBackupFromIndexedDb().then((b) => {
@@ -156,169 +183,220 @@ export function App() {
         Skip to main content
       </a>
       <div className="proto-banner" role="note">
-        Testnet prototype — QoreChain Diana (EVM Chain ID 9800). Funds in your vault are protected by post-quantum rules;
+        Testnet prototype — QoreChain Diana (Chain ID 9800). Funds in your vault are protected by post-quantum rules;
         use testnet tokens only.
       </div>
 
-      <div className="app-shell">
-        <header className="header">
-          <div className="brand">
-            <h1>LatticeWard</h1>
-            <p>
-              Post-quantum spend-governance vaults so a leaked classical key or Q-Day cannot drain your AI agent&apos;s
-              treasury.
-            </p>
+      <header className="site-header">
+        <div className="header-inner">
+          <div className="row-wrap">
+            <button
+              type="button"
+              className="brand-mark"
+              onClick={() => setMode("landing")}
+              aria-label="LatticeWard home"
+            >
+              <span className="brand-dot" aria-hidden="true" />
+              <span>LatticeWard</span>
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setMode(mode === "landing" ? "app" : "landing")}
+            >
+              {mode === "landing" ? "Open App" : "Overview"}
+            </button>
           </div>
 
-          <div className="wallet-bar">
+          <div className="header-actions">
+            <button
+              type="button"
+              className="btn"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+            >
+              {theme === "dark" ? "☀ Light" : "☾ Dark"}
+            </button>
             <button type="button" className="btn" onClick={() => void handleConnectQoreX()}>
-              {qorex?.connected ? `QoreX: ${qorex.bech32Address.slice(0, 10)}...` : "Connect QoreX"}
+              {qorex?.connected ? `QoreX: ${qorex.bech32Address.slice(0, 9)}...` : "Connect QoreX"}
             </button>
             <button type="button" className="btn btn-primary" onClick={() => void handleConnectMetaMask()}>
-              {metamask?.connected ? `MetaMask: ${metamask.address.slice(0, 8)}...` : "Connect MetaMask"}
+              {metamask?.connected ? `MetaMask: ${metamask.address.slice(0, 7)}...` : "Connect MetaMask"}
             </button>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {walletErr && (
-          <div className="alert alert-danger" role="alert">
-            {walletErr}
-          </div>
-        )}
-        {walletInfo && (
-          <div className="alert alert-success" role="status" aria-live="polite">
-            {walletInfo}
-          </div>
-        )}
+      <main id="main-content">
+        {mode === "landing" ? (
+          <LandingPage
+            referenceVault={vaultSnapshot}
+            onOpenApp={() => {
+              setMode("app");
+              window.scrollTo({ top: 0, behavior: "auto" });
+            }}
+          />
+        ) : (
+          <div className="app-layout">
+            <aside className="sidebar-nav" aria-label="Vault navigation">
+              {APP_TABS.map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className="nav-item"
+                  aria-current={tab === id ? "page" : undefined}
+                  onClick={() => setTab(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </aside>
 
-        <section className="card" aria-label="Active vault selector">
-          <div className="row-wrap" style={{ justifyContent: "space-between" }}>
-            <div className="field" style={{ margin: 0, flex: 1, minWidth: 240 }}>
-              <label htmlFor="vault-select">Active Vault</label>
-              <select
-                id="vault-select"
-                value={selectedVaultAddr}
-                onChange={(e) => setSelectedVaultAddr(e.target.value)}
-              >
-                {userVaults.map((v, i) => (
-                  <option key={v} value={v}>
-                    My Vault #{i + 1} ({v})
-                  </option>
-                ))}
-                <option value={REFERENCE_VAULT_ADDRESS}>
-                  Reference Drilled Vault (Read-Only: {REFERENCE_VAULT_ADDRESS.slice(0, 10)}...)
-                </option>
-              </select>
+            <div>
+              {walletErr && (
+                <div className="alert alert-danger" role="alert">
+                  {walletErr}
+                </div>
+              )}
+              {walletInfo && (
+                <div className="alert alert-safe" role="status" aria-live="polite">
+                  {walletInfo}
+                </div>
+              )}
+
+              <section className="card" aria-label="Active vault selector">
+                <div className="row-wrap" style={{ justifyContent: "space-between" }}>
+                  <div className="field" style={{ margin: 0, flex: 1, minWidth: 220 }}>
+                    <label htmlFor="vault-select">Active Vault</label>
+                    <select
+                      id="vault-select"
+                      value={selectedVaultAddr}
+                      onChange={(e) => setSelectedVaultAddr(e.target.value)}
+                    >
+                      {userVaults.map((v, i) => (
+                        <option key={v} value={v}>
+                          My Vault #{i + 1} ({v})
+                        </option>
+                      ))}
+                      <option value={REFERENCE_VAULT_ADDRESS}>
+                        Reference Drilled Vault (Read-Only: {REFERENCE_VAULT_ADDRESS.slice(0, 10)}...)
+                      </option>
+                    </select>
+                  </div>
+                  <button type="button" className="btn" onClick={() => void refreshChainState()}>
+                    Sync Chain
+                  </button>
+                </div>
+              </section>
+
+              {(tab === "setup" ||
+                tab === "create" ||
+                tab === "dashboard" ||
+                tab === "allowances" ||
+                tab === "emergency") && (
+                <LatticeKeyPanel
+                  storedBackup={storedBackup}
+                  unlockedSigner={unlockedSigner}
+                  backupConfirmed={backupConfirmed}
+                  onUnlocked={(signer, backup) => {
+                    setUnlockedSigner(signer);
+                    setStoredBackup(backup);
+                  }}
+                  onBackupConfirmed={() => {
+                    setBackupConfirmed(true);
+                    localStorage.setItem("lw_backup_confirmed", "true");
+                  }}
+                  onCleared={() => {
+                    setUnlockedSigner(null);
+                    setStoredBackup(null);
+                    setBackupConfirmed(false);
+                    localStorage.removeItem("lw_backup_confirmed");
+                  }}
+                />
+              )}
+
+              {tab === "setup" && (
+                <SetupChecklist
+                  qorex={qorex}
+                  metamask={metamask}
+                  pqcStatus={pqcStatus}
+                  evmWindow={evmWindow}
+                  hasVault={userVaults.length > 0}
+                  vault={vaultSnapshot}
+                  onConnectQoreX={() => void handleConnectQoreX()}
+                  onConnectMetaMask={() => void handleConnectMetaMask()}
+                  onOpenWindowInQoreX={() => void handleOpenWindowInQoreX()}
+                  onGoTab={(t) => setTab(t === "deposit" ? "dashboard" : t)}
+                />
+              )}
+
+              {tab === "create" && (
+                <CreateVaultPanel
+                  metamask={metamask}
+                  unlockedSigner={unlockedSigner}
+                  backupConfirmed={backupConfirmed}
+                  onVaultCreated={(addr) => {
+                    setSelectedVaultAddr(addr);
+                    setTab("dashboard");
+                    void refreshChainState();
+                  }}
+                />
+              )}
+
+              {tab === "dashboard" && (
+                <DashboardPanel
+                  vault={vaultSnapshot}
+                  metamask={metamask}
+                  userFusdBalance={userFusd}
+                  onRefresh={() => void refreshChainState()}
+                  onGoEmergency={() => setTab("emergency")}
+                />
+              )}
+
+              {tab === "allowances" && (
+                <AllowancesPanel
+                  vault={vaultSnapshot}
+                  metamask={metamask}
+                  unlockedSigner={unlockedSigner}
+                  relayerUrl={relayerUrl}
+                  onRefresh={() => void refreshChainState()}
+                />
+              )}
+
+              {tab === "emergency" && (
+                <EmergencyPanel
+                  vault={vaultSnapshot}
+                  metamask={metamask}
+                  unlockedSigner={unlockedSigner}
+                  evmWindow={evmWindow}
+                  relayerUrl={relayerUrl}
+                  onRefresh={() => void refreshChainState()}
+                />
+              )}
+
+              {tab === "agent" && <AgentAccountPanel vault={vaultSnapshot} relayerUrl={relayerUrl} />}
+              {tab === "attack" && <AttackLabPanel vault={vaultSnapshot} />}
+              {tab === "glossary" && <GlossaryPanel />}
             </div>
-            <button type="button" className="btn" onClick={() => void refreshChainState()}>
-              Sync Chain
-            </button>
           </div>
-        </section>
+        )}
+      </main>
 
-        <nav className="nav-tabs" role="tablist" aria-label="LatticeWard sections">
-          {(
-            [
-              ["setup", "Setup"],
-              ["dashboard", "Dashboard & Emergency"],
-              ["create", "Create Vault"],
-              ["allowances", "Allowances"],
-              ["agent", "Agent & MCP"],
-              ["attack", "Attack Lab"],
-              ["glossary", "Glossary"],
-            ] as [TabId, string][]
-          ).map(([id, label]) => (
+      {mode === "app" && (
+        <nav className="bottom-nav" aria-label="Mobile vault navigation">
+          {APP_TABS.map(([id, label]) => (
             <button
               key={id}
               type="button"
-              role="tab"
-              aria-selected={tab === id}
-              className="nav-tab"
+              className="bottom-nav-btn"
+              aria-current={tab === id ? "page" : undefined}
               onClick={() => setTab(id)}
             >
               {label}
             </button>
           ))}
         </nav>
-
-        <main id="main-content">
-          {(tab === "setup" || tab === "create" || tab === "dashboard" || tab === "allowances") && (
-            <LatticeKeyPanel
-              storedBackup={storedBackup}
-              unlockedSigner={unlockedSigner}
-              backupConfirmed={backupConfirmed}
-              onUnlocked={(signer, backup) => {
-                setUnlockedSigner(signer);
-                setStoredBackup(backup);
-              }}
-              onBackupConfirmed={() => {
-                setBackupConfirmed(true);
-                localStorage.setItem("lw_backup_confirmed", "true");
-              }}
-              onCleared={() => {
-                setUnlockedSigner(null);
-                setStoredBackup(null);
-                setBackupConfirmed(false);
-                localStorage.removeItem("lw_backup_confirmed");
-              }}
-            />
-          )}
-
-          {tab === "setup" && (
-            <SetupChecklist
-              qorex={qorex}
-              metamask={metamask}
-              pqcStatus={pqcStatus}
-              evmWindow={evmWindow}
-              hasVault={userVaults.length > 0}
-              vault={vaultSnapshot}
-              onConnectQoreX={() => void handleConnectQoreX()}
-              onConnectMetaMask={() => void handleConnectMetaMask()}
-              onOpenWindowInQoreX={() => void handleOpenWindowInQoreX()}
-              onGoTab={(t) => setTab(t === "deposit" ? "dashboard" : t)}
-            />
-          )}
-
-          {tab === "create" && (
-            <CreateVaultPanel
-              metamask={metamask}
-              unlockedSigner={unlockedSigner}
-              backupConfirmed={backupConfirmed}
-              onVaultCreated={(addr) => {
-                setSelectedVaultAddr(addr);
-                setTab("dashboard");
-                void refreshChainState();
-              }}
-            />
-          )}
-
-          {tab === "dashboard" && (
-            <DashboardPanel
-              vault={vaultSnapshot}
-              metamask={metamask}
-              unlockedSigner={unlockedSigner}
-              userFusdBalance={userFusd}
-              evmWindow={evmWindow}
-              relayerUrl={relayerUrl}
-              onRefresh={() => void refreshChainState()}
-            />
-          )}
-
-          {tab === "allowances" && (
-            <AllowancesPanel
-              vault={vaultSnapshot}
-              metamask={metamask}
-              unlockedSigner={unlockedSigner}
-              relayerUrl={relayerUrl}
-              onRefresh={() => void refreshChainState()}
-            />
-          )}
-
-          {tab === "agent" && <AgentAccountPanel vault={vaultSnapshot} relayerUrl={relayerUrl} />}
-          {tab === "attack" && <AttackLabPanel vault={vaultSnapshot} />}
-          {tab === "glossary" && <GlossaryPanel />}
-        </main>
-      </div>
+      )}
     </>
   );
 }

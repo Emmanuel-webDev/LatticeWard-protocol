@@ -155,14 +155,14 @@ export function LatticeKeyPanel({
         </div>
       )}
       {info && (
-        <div className="alert alert-success" role="status" aria-live="polite">
+        <div className="alert alert-safe" role="status" aria-live="polite">
           {info}
         </div>
       )}
 
       {unlockedSigner ? (
         <div>
-          <div className="alert alert-success">
+          <div className="alert alert-safe">
             <strong>Unlocked:</strong> Key fingerprint{" "}
             <span className="mono">{unlockedSigner.backup.keyHash.slice(0, 14)}...</span>
           </div>

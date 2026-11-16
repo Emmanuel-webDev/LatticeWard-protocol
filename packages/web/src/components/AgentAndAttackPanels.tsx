@@ -105,7 +105,7 @@ export function AgentAccountPanel({ vault, relayerUrl }: { vault: VaultSnapshot 
         <div className="diff-box">
           <p style={{ margin: "0 0 6px" }}>
             <strong>PQC Key Registered (0x0A02):</strong>{" "}
-            <span className={`badge ${pqc.registered ? "badge-active" : "badge-frozen"}`}>
+            <span className={`badge ${pqc.registered ? "badge-safe" : "badge-danger"}`}>
               {pqc.registered ? `✓ Registered (${pqc.pubKeyBytes} bytes)` : "✕ Not Registered"}
             </span>
           </p>
@@ -184,11 +184,15 @@ export function AttackLabPanel({ vault }: { vault: VaultSnapshot | null }) {
 
       {results && (
         <ul className="checklist">
-          {results.map((r) => (
-            <li key={r.id} className="check-item">
+          {results.map((r, idx) => (
+            <li
+              key={r.id}
+              className="check-item attack-reveal"
+              style={{ animationDelay: `${idx * 35}ms` }}
+            >
               <div>
                 <div className="row-wrap">
-                  <span className={`badge ${r.blocked ? "badge-active" : "badge-frozen"}`}>
+                  <span className={`badge ${r.blocked ? "badge-safe" : "badge-danger"}`}>
                     {r.blocked ? `✓ Blocked (${r.errorName})` : `✕ Allowed (${r.errorName})`}
                   </span>
                   <strong>{r.label}</strong>

@@ -105,7 +105,7 @@ export function SetupChecklist({
       </div>
 
       {evmWindow?.status === "cors_blocked" && (
-        <div className="alert alert-warn" style={{ marginTop: 12 }}>
+        <div className="alert alert-caution" style={{ marginTop: 12 }}>
           <strong>EVM window check note:</strong> {evmWindow.message}
         </div>
       )}
@@ -115,7 +115,7 @@ export function SetupChecklist({
           <li key={s.id} className="check-item">
             <div>
               <div className="row-wrap">
-                <span className={`badge ${s.done ? "badge-active" : "badge-warn"}`}>
+                <span className={`badge ${s.done ? "badge-safe" : "badge-caution"}`}>
                   {s.done ? "✓ Done" : "○ Pending"}
                 </span>
                 <strong>{s.title}</strong>

@@ -120,7 +120,7 @@ export function CreateVaultPanel({ metamask, unlockedSigner, backupConfirmed, on
       </p>
 
       {!backupConfirmed && (
-        <div className="alert alert-warn">
+        <div className="alert alert-caution">
           <strong>Backup required first:</strong> Unlock your Lattice key above, download the{" "}
           <span className="mono">.lwkey.json</span> backup, and enter its 8-character fingerprint to enable vault
           creation.
@@ -133,7 +133,7 @@ export function CreateVaultPanel({ metamask, unlockedSigner, backupConfirmed, on
         </div>
       )}
       {txHash && (
-        <div className="alert alert-success" role="status" aria-live="polite">
+        <div className="alert alert-safe" role="status" aria-live="polite">
           Vault deployment transaction sent:{" "}
           <a href={explorerTxUrl(txHash)} target="_blank" rel="noreferrer">
             View on QoreScan Explorer

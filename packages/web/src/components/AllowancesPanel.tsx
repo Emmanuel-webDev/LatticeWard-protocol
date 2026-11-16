@@ -166,7 +166,7 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
         </div>
       )}
       {txHash && (
-        <div className="alert alert-success" role="status" aria-live="polite">
+        <div className="alert alert-safe" role="status" aria-live="polite">
           Allowance updated on-chain:{" "}
           <a href={explorerTxUrl(txHash)} target="_blank" rel="noreferrer">
             View Transaction

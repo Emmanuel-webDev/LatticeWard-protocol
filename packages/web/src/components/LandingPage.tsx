@@ -126,38 +126,44 @@ export function LandingPage({ referenceVault, onOpenApp }: Props) {
           </a>
         </div>
 
-        {/* Live strip of real vault facts */}
-        <div className="live-strip" aria-label="Live reference vault state on QoreChain Diana">
-          <div className="live-cell">
-            <div className="eyebrow">Vault State</div>
-            <div style={{ marginTop: 8 }}>
-              {referenceVault ? (
-                <span className={`badge ${referenceVault.frozen ? "badge-danger" : "badge-safe"}`}>
-                  {referenceVault.frozen ? "❄ Frozen" : "● Active"}
-                </span>
-              ) : (
-                <span className="muted">Reading chain...</span>
-              )}
-            </div>
+        {/* Live strip of real reference vault facts */}
+        <div style={{ marginTop: 40 }}>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>
+            Live Public Reference Vault ({REFERENCE_VAULT_ADDRESS.slice(0, 8)}...{REFERENCE_VAULT_ADDRESS.slice(-6)}) ·
+            Shared Demo (Not Your Personal Vault)
           </div>
-          <div className="live-cell">
-            <div className="eyebrow">QOR Balance</div>
-            <div className="big-metric tabular" style={{ marginTop: 4 }}>
-              {referenceVault ? `${Number(formatEther(referenceVault.qorBalance)).toFixed(3)} QOR` : "—"}
+          <div className="live-strip" style={{ marginTop: 0 }} aria-label="Live public reference vault state on QoreChain Diana">
+            <div className="live-cell">
+              <div className="eyebrow">Demo Vault State</div>
+              <div style={{ marginTop: 8 }}>
+                {referenceVault ? (
+                  <span className={`badge ${referenceVault.frozen ? "badge-danger" : "badge-safe"}`}>
+                    {referenceVault.frozen ? "❄ Frozen" : "● Active"}
+                  </span>
+                ) : (
+                  <span className="muted">Reading chain...</span>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="live-cell">
-            <div className="eyebrow">ERC-20 fUSD</div>
-            <div className="big-metric tabular" style={{ marginTop: 4 }}>
-              {referenceVault
-                ? `${Number(formatUnits(referenceVault.fusdBalance, referenceVault.fusdDecimals)).toFixed(1)} fUSD`
-                : "—"}
+            <div className="live-cell">
+              <div className="eyebrow">Demo QOR Balance</div>
+              <div className="big-metric tabular" style={{ marginTop: 4 }}>
+                {referenceVault ? `${Number(formatEther(referenceVault.qorBalance)).toFixed(3)} QOR` : "—"}
+              </div>
             </div>
-          </div>
-          <div className="live-cell">
-            <div className="eyebrow">QOR Daily Limit</div>
-            <div className="big-metric tabular" style={{ marginTop: 4 }}>
-              {referenceVault ? `${formatEther(referenceVault.qorLimit.epochLimit)} QOR` : "—"}
+            <div className="live-cell">
+              <div className="eyebrow">Demo ERC-20 fUSD</div>
+              <div className="big-metric tabular" style={{ marginTop: 4 }}>
+                {referenceVault
+                  ? `${Number(formatUnits(referenceVault.fusdBalance, referenceVault.fusdDecimals)).toFixed(1)} fUSD`
+                  : "—"}
+              </div>
+            </div>
+            <div className="live-cell">
+              <div className="eyebrow">Demo QOR Daily Limit</div>
+              <div className="big-metric tabular" style={{ marginTop: 4 }}>
+                {referenceVault ? `${formatEther(referenceVault.qorLimit.epochLimit)} QOR` : "—"}
+              </div>
             </div>
           </div>
         </div>

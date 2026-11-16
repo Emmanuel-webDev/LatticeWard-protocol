@@ -66,7 +66,8 @@ export function App() {
   });
 
   const [userVaults, setUserVaults] = useState<string[]>([]);
-  const [selectedVaultAddr, setSelectedVaultAddr] = useState<string>(REFERENCE_VAULT_ADDRESS);
+  const [selectedVaultAddr, setSelectedVaultAddr] = useState<string>("");
+  const [referenceVault, setReferenceVault] = useState<VaultSnapshot | null>(null);
   const [vaultSnapshot, setVaultSnapshot] = useState<VaultSnapshot | null>(null);
   const [userFusd, setUserFusd] = useState<bigint>(0n);
   const [relayerUrl] = useState<string>(DEFAULT_RELAYER_URL);
@@ -91,10 +92,19 @@ export function App() {
 
   const refreshChainState = useCallback(async () => {
     try {
+      const refSnap = await fetchVaultSnapshot(REFERENCE_VAULT_ADDRESS);
+      setReferenceVault(refSnap);
+
       if (selectedVaultAddr && isAddress(selectedVaultAddr)) {
-        const snap = await fetchVaultSnapshot(selectedVaultAddr);
+        const snap =
+          selectedVaultAddr.toLowerCase() === REFERENCE_VAULT_ADDRESS.toLowerCase()
+            ? refSnap
+            : await fetchVaultSnapshot(selectedVaultAddr);
         setVaultSnapshot(snap);
+      } else {
+        setVaultSnapshot(null);
       }
+
       if (activeAddress && isAddress(activeAddress)) {
         const [pqc, win, vaults, fusd] = await Promise.all([
           checkPqcKeyStatus(activeAddress),
@@ -106,7 +116,7 @@ export function App() {
         setEvmWindow(win);
         setUserVaults(vaults);
         setUserFusd(fusd.raw);
-        if (vaults.length > 0 && selectedVaultAddr === REFERENCE_VAULT_ADDRESS) {
+        if (vaults.length > 0 && !selectedVaultAddr) {
           const newest = vaults[vaults.length - 1];
           setSelectedVaultAddr(newest);
           setVaultSnapshot(await fetchVaultSnapshot(newest));
@@ -230,7 +240,7 @@ export function App() {
       <main id="main-content">
         {mode === "landing" ? (
           <LandingPage
-            referenceVault={vaultSnapshot}
+            referenceVault={referenceVault}
             onOpenApp={() => {
               setMode("app");
               window.scrollTo({ top: 0, behavior: "auto" });
@@ -273,13 +283,18 @@ export function App() {
                       value={selectedVaultAddr}
                       onChange={(e) => setSelectedVaultAddr(e.target.value)}
                     >
+                      <option value="">
+                        {userVaults.length === 0
+                          ? "No personal vault yet (create one or pick demo below)"
+                          : "Select a vault..."}
+                      </option>
                       {userVaults.map((v, i) => (
                         <option key={v} value={v}>
                           My Vault #{i + 1} ({v})
                         </option>
                       ))}
                       <option value={REFERENCE_VAULT_ADDRESS}>
-                        Reference Drilled Vault (Read-Only: {REFERENCE_VAULT_ADDRESS.slice(0, 10)}...)
+                        Reference Drilled Vault (Read-Only Demo: {REFERENCE_VAULT_ADDRESS.slice(0, 10)}...)
                       </option>
                     </select>
                   </div>

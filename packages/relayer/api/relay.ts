@@ -5,18 +5,6 @@ const RPC_URL = process.env.QOR_EVM_RPC || "https://evm-testnet.qore.host";
 const CHAIN_ID = Number(process.env.QOR_CHAIN_ID || 9800);
 const FACTORY_ADDRESS = process.env.FACTORY_ADDRESS || "0xAEdE5a3B09c9BDC749297C39826C6DDdaF311C5c";
 
-const ALLOWED_SELECTORS = new Set(
-  new Interface([
-    "function configurePolicy((address,uint256,uint256,uint256,bool,bool),bytes,bytes)",
-    "function setAssetLimit((address,bool,uint256,uint256),bytes,bytes)",
-    "function sovereignWithdraw((address,address,uint256),bytes,bytes)",
-    "function triggerQDayEmergencyClawback((address,address,address[]),bytes,bytes)",
-    "function emergencyClawback((address,address,address[]),bytes,bytes)",
-    "function rotateSovereignKey(bytes32,bytes,bytes)",
-  ]).fragments.map((f) => Interface.getAbiCoder() && f.format("sighash")),
-);
-
-// Compute 4-byte selectors cleanly
 const SOVEREIGN_IFACE = new Interface([
   "function configurePolicy((address,uint256,uint256,uint256,bool,bool),bytes,bytes)",
   "function setAssetLimit((address,bool,uint256,uint256),bytes,bytes)",
@@ -36,7 +24,6 @@ const ALLOWED_4BYTE = new Set(
     "rotateSovereignKey",
   ].map((name) => SOVEREIGN_IFACE.getFunction(name)!.selector.toLowerCase()),
 );
-void ALLOWED_SELECTORS;
 
 const rateBucket = new Map<string, number[]>();
 const RATE_WINDOW_MS = 60_000;

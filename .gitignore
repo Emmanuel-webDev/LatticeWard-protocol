@@ -4,5 +4,6 @@ cache/
 lib/
 .env
 *.key
+*.lwkey.json
 qday-report.json
 .sovereign-keys.json

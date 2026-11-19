@@ -5,6 +5,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "build": "npm run build --prefix packages/web",
     "typecheck": "tsc --noEmit",
     "probe": "tsx scripts/probe-precompiles.ts",
     "check:windows": "tsx scripts/check-window.ts",

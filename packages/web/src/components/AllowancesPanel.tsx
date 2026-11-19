@@ -16,11 +16,11 @@ interface Props {
 export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, onRefresh }: Props) {
   const [preset, setPreset] = useState<"cautious" | "standard" | "custom">("custom");
   const [qorEnabled, setQorEnabled] = useState(true);
-  const [qorMaxTx, setQorMaxTx] = useState("1");
-  const [qorDaily, setQorDaily] = useState("3");
+  const [qorMaxTx, setQorMaxTx] = useState("0.1");
+  const [qorDaily, setQorDaily] = useState("0.3");
   const [fusdEnabled, setFusdEnabled] = useState(true);
-  const [fusdMaxTx, setFusdMaxTx] = useState("10");
-  const [fusdDaily, setFusdDaily] = useState("30");
+  const [fusdMaxTx, setFusdMaxTx] = useState("1");
+  const [fusdDaily, setFusdDaily] = useState("3");
   const [requirePqc, setRequirePqc] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
   if (!vault) {
     return (
       <section className="card">
-        <h2>Allowances</h2>
+        <h2>Consumer Guardrail Configurator</h2>
         <p className="muted">Select or create a vault first to configure daily limits and the quantum-safety firewall.</p>
       </section>
     );
@@ -152,7 +152,10 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
 
   return (
     <section className="card" aria-labelledby="allowances-heading">
-      <h2 id="allowances-heading">Allowances &amp; Quantum-Safety Firewall</h2>
+      <div className="eyebrow">Plane 2 · Sovereign Policy Controls (0x0A01)</div>
+      <h2 id="allowances-heading" style={{ marginTop: 4 }}>
+        Consumer Guardrail Configurator
+      </h2>
       <p className="muted">
         Set per-payment and daily limits for your agent key.{" "}
         <span title="The day starts at the first payment.">
@@ -167,7 +170,7 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
       )}
       {txHash && (
         <div className="alert alert-safe" role="status" aria-live="polite">
-          Allowance updated on-chain:{" "}
+          Guardrail updated on-chain:{" "}
           <a href={explorerTxUrl(txHash)} target="_blank" rel="noreferrer">
             View Transaction
           </a>
@@ -214,7 +217,19 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
             <span>Allow QOR payments</span>
           </label>
           <div className="field">
-            <label htmlFor="al-qor-tx">Max per payment (QOR)</label>
+            <label htmlFor="al-qor-tx">Max per payment (QOR): {qorMaxTx}</label>
+            <input
+              type="range"
+              min="0.01"
+              max="10"
+              step="0.01"
+              value={Number(qorMaxTx) || 0.1}
+              onChange={(e) => {
+                setPreset("custom");
+                setQorMaxTx(e.target.value);
+              }}
+              aria-label="QOR max per payment slider"
+            />
             <input
               id="al-qor-tx"
               type="number"
@@ -227,7 +242,19 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
             />
           </div>
           <div className="field">
-            <label htmlFor="al-qor-day">Daily limit (QOR)</label>
+            <label htmlFor="al-qor-day">Daily limit (QOR): {qorDaily}</label>
+            <input
+              type="range"
+              min="0.05"
+              max="30"
+              step="0.05"
+              value={Number(qorDaily) || 0.3}
+              onChange={(e) => {
+                setPreset("custom");
+                setQorDaily(e.target.value);
+              }}
+              aria-label="QOR daily limit slider"
+            />
             <input
               id="al-qor-day"
               type="number"
@@ -239,12 +266,20 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
               }}
             />
           </div>
-          <p className="muted">
-            <strong>Before:</strong> {vault.qorLimit.enabled ? `${formatEther(vault.qorLimit.maxTxValue)} / ${formatEther(vault.qorLimit.epochLimit)} QOR` : "Disabled"}
+          <p className="muted tabular">
+            <strong>Before:</strong>{" "}
+            {vault.qorLimit.enabled
+              ? `${formatEther(vault.qorLimit.maxTxValue)} / ${formatEther(vault.qorLimit.epochLimit)} QOR`
+              : "Disabled"}
             <br />
             <strong>After:</strong> {qorEnabled ? `${qorMaxTx} / ${qorDaily} QOR` : "Disabled"}
           </p>
-          <button type="button" className="btn btn-primary" onClick={() => void handleSaveAsset("QOR")} disabled={busy || !unlockedSigner}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => void handleSaveAsset("QOR")}
+            disabled={busy || !unlockedSigner}
+          >
             {busy ? "Signing..." : "Approve QOR Limit with Lattice Key"}
           </button>
         </div>
@@ -264,7 +299,19 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
             <span>Allow fUSD payments</span>
           </label>
           <div className="field">
-            <label htmlFor="al-fusd-tx">Max per payment (fUSD)</label>
+            <label htmlFor="al-fusd-tx">Max per payment (fUSD): {fusdMaxTx}</label>
+            <input
+              type="range"
+              min="0.5"
+              max="100"
+              step="0.5"
+              value={Number(fusdMaxTx) || 1}
+              onChange={(e) => {
+                setPreset("custom");
+                setFusdMaxTx(e.target.value);
+              }}
+              aria-label="fUSD max per payment slider"
+            />
             <input
               id="al-fusd-tx"
               type="number"
@@ -277,7 +324,19 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
             />
           </div>
           <div className="field">
-            <label htmlFor="al-fusd-day">Daily limit (fUSD)</label>
+            <label htmlFor="al-fusd-day">Daily limit (fUSD): {fusdDaily}</label>
+            <input
+              type="range"
+              min="1"
+              max="300"
+              step="1"
+              value={Number(fusdDaily) || 3}
+              onChange={(e) => {
+                setPreset("custom");
+                setFusdDaily(e.target.value);
+              }}
+              aria-label="fUSD daily limit slider"
+            />
             <input
               id="al-fusd-day"
               type="number"
@@ -289,12 +348,20 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
               }}
             />
           </div>
-          <p className="muted">
-            <strong>Before:</strong> {vault.fusdLimit.enabled ? `${formatUnits(vault.fusdLimit.maxTxValue, vault.fusdDecimals)} / ${formatUnits(vault.fusdLimit.epochLimit, vault.fusdDecimals)} fUSD` : "Disabled"}
+          <p className="muted tabular">
+            <strong>Before:</strong>{" "}
+            {vault.fusdLimit.enabled
+              ? `${formatUnits(vault.fusdLimit.maxTxValue, vault.fusdDecimals)} / ${formatUnits(vault.fusdLimit.epochLimit, vault.fusdDecimals)} fUSD`
+              : "Disabled"}
             <br />
             <strong>After:</strong> {fusdEnabled ? `${fusdMaxTx} / ${fusdDaily} fUSD` : "Disabled"}
           </p>
-          <button type="button" className="btn btn-primary" onClick={() => void handleSaveAsset("fUSD")} disabled={busy || !unlockedSigner}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => void handleSaveAsset("fUSD")}
+            disabled={busy || !unlockedSigner}
+          >
             {busy ? "Signing..." : "Approve fUSD Limit with Lattice Key"}
           </button>
         </div>
@@ -321,7 +388,12 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
           <strong>Before:</strong> {vault.requireRecipientPqc ? "ON" : "OFF"} → <strong>After:</strong>{" "}
           {requirePqc ? "ON" : "OFF"}
         </p>
-        <button type="button" className="btn btn-primary" onClick={() => void handleSaveFirewall()} disabled={busy || !unlockedSigner}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => void handleSaveFirewall()}
+          disabled={busy || !unlockedSigner}
+        >
           {busy ? "Signing..." : "Approve Firewall Change with Lattice Key"}
         </button>
       </div>

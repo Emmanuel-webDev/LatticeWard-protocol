@@ -10,7 +10,7 @@ import {
   fetchUserVaults,
   fetchVaultSnapshot,
 } from "./lib/chain";
-import { DEFAULT_RELAYER_URL } from "./lib/constants";
+import { DEFAULT_RELAYER_URL, REFERENCE_VAULT_ADDRESS } from "./lib/constants";
 import {
   type BrowserKeySigner,
   type EncryptedKeyBackup,
@@ -21,6 +21,7 @@ import {
   type QoreXConnection,
   connectMetaMask,
   connectQoreX,
+  evmToQor,
   mapChainError,
 } from "./lib/wallets";
 import { LandingPage } from "./components/LandingPage";
@@ -40,16 +41,16 @@ const APP_TABS: [TabId, string][] = [
   ["setup", "Setup"],
   ["dashboard", "Dashboard"],
   ["create", "Create Vault"],
-  ["allowances", "Allowances"],
+  ["allowances", "Guardrails"],
   ["agent", "Agent"],
-  ["emergency", "Emergency"],
+  ["emergency", "Kill-Switch"],
   ["attack", "Attack Lab"],
   ["glossary", "Glossary"],
 ];
 
 export function App() {
   const [mode, setMode] = useState<ViewMode>("landing");
-  const [tab, setTab] = useState<TabId>("setup");
+  const [tab, setTab] = useState<TabId>("dashboard");
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const attr = document.documentElement.getAttribute("data-theme");
     return attr === "dark" ? "dark" : "light";
@@ -67,7 +68,7 @@ export function App() {
   });
 
   const [userVaults, setUserVaults] = useState<string[]>([]);
-  const [selectedVaultAddr, setSelectedVaultAddr] = useState<string>("");
+  const [selectedVaultAddr, setSelectedVaultAddr] = useState<string>(REFERENCE_VAULT_ADDRESS);
   const [vaultSnapshot, setVaultSnapshot] = useState<VaultSnapshot | null>(null);
   const [userFusd, setUserFusd] = useState<bigint>(0n);
   const [relayerUrl] = useState<string>(DEFAULT_RELAYER_URL);
@@ -76,6 +77,7 @@ export function App() {
   const [walletInfo, setWalletInfo] = useState<string | null>(null);
 
   const activeAddress = metamask?.address || qorex?.evmAddress || "";
+  const activeQorAddress = qorex?.bech32Address || (activeAddress ? evmToQor(activeAddress) : "");
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
@@ -98,7 +100,6 @@ export function App() {
       } else {
         setVaultSnapshot(null);
       }
-
       if (activeAddress && isAddress(activeAddress)) {
         const [pqc, win, vaults, fusd] = await Promise.all([
           checkPqcKeyStatus(activeAddress),
@@ -110,7 +111,7 @@ export function App() {
         setEvmWindow(win);
         setUserVaults(vaults);
         setUserFusd(fusd.raw);
-        if (vaults.length > 0 && !selectedVaultAddr) {
+        if (vaults.length > 0 && selectedVaultAddr === REFERENCE_VAULT_ADDRESS) {
           const newest = vaults[vaults.length - 1];
           setSelectedVaultAddr(newest);
           setVaultSnapshot(await fetchVaultSnapshot(newest));
@@ -131,7 +132,7 @@ export function App() {
     try {
       const conn = await connectQoreX();
       setQorex(conn);
-      setWalletInfo(`QoreX connected: ${conn.bech32Address}`);
+      setWalletInfo(`QoreX connected: ${conn.bech32Address} (${conn.evmAddress})`);
     } catch (e) {
       setWalletErr(mapChainError(e));
     }
@@ -213,6 +214,14 @@ export function App() {
           </div>
 
           <div className="header-actions">
+            {pqcStatus && (
+              <span
+                className={`badge ${pqcStatus.registered ? "badge-safe" : "badge-danger"}`}
+                title={`0x0A02 status for ${pqcStatus.address} (${pqcStatus.qorAddress})`}
+              >
+                {pqcStatus.registered ? "✓ Quantum-Protected (ML-DSA-87)" : "✕ Unprotected"}
+              </span>
+            )}
             <button
               type="button"
               className="btn"
@@ -267,6 +276,27 @@ export function App() {
                 </div>
               )}
 
+              {/* Wallet & Quantum Status Gate */}
+              {activeAddress && (
+                <section className="card" aria-label="Connected wallet quantum status gate">
+                  <div className="row-wrap" style={{ justifyContent: "space-between" }}>
+                    <div>
+                      <div className="eyebrow">Connected Account · 0x0A02 Quantum Status Gate</div>
+                      <div className="mono" style={{ marginTop: 4 }}>
+                        EVM: {activeAddress} · Native: {activeQorAddress}
+                      </div>
+                    </div>
+                    {pqcStatus && (
+                      <span className={`badge ${pqcStatus.registered ? "badge-safe" : "badge-danger"}`}>
+                        {pqcStatus.registered
+                          ? `✓ Quantum-Protected (ML-DSA-87 · ${pqcStatus.pubKeyBytes} B)`
+                          : "✕ Unprotected (No 0x0A02 Key)"}
+                      </span>
+                    )}
+                  </div>
+                </section>
+              )}
+
               <section className="card" aria-label="Active vault selector">
                 <div className="row-wrap" style={{ justifyContent: "space-between" }}>
                   <div className="field" style={{ margin: 0, flex: 1, minWidth: 220 }}>
@@ -276,16 +306,14 @@ export function App() {
                       value={selectedVaultAddr}
                       onChange={(e) => setSelectedVaultAddr(e.target.value)}
                     >
-                      <option value="">
-                        {userVaults.length === 0
-                          ? "No vault created yet — go to Create Vault"
-                          : "Select your vault..."}
-                      </option>
                       {userVaults.map((v, i) => (
                         <option key={v} value={v}>
                           My Vault #{i + 1} ({v})
                         </option>
                       ))}
+                      <option value={REFERENCE_VAULT_ADDRESS}>
+                        Live Deployed Vault ({REFERENCE_VAULT_ADDRESS})
+                      </option>
                     </select>
                   </div>
                   <button type="button" className="btn" onClick={() => void refreshChainState()}>

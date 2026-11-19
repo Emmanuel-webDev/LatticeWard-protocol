@@ -274,11 +274,25 @@ contract LatticeWardVault is ReentrancyGuard {
 
     /// @dev Direct staticcall wrapper to precompile 0x0A01 (`pqcVerify`) via `QorePQC.verify`.
     function _verifyPqcSignature(bytes calldata pk, bytes32 digest, bytes calldata sig) internal view returns (bool) {
-        return QorePQC.verify(pk, digest, sig);
+        return pqcVerify(pk, sig, abi.encodePacked(digest));
     }
 
     /// @dev Direct staticcall wrapper to precompile 0x0A02 (`pqcKeyStatus`) via `QorePQC.isRegistered`.
     function _checkPqcKeyStatus(address account) internal view returns (bool) {
+        return pqcKeyStatus(account);
+    }
+
+    /// @dev Calls QoreChain precompile 0x0000000000000000000000000000000000000a01 (`pqcVerify`).
+    function pqcVerify(bytes calldata publicKey, bytes calldata signature, bytes memory message)
+        internal
+        view
+        returns (bool)
+    {
+        return QorePQC.verify(publicKey, bytes32(message), signature);
+    }
+
+    /// @dev Calls QoreChain precompile 0x0000000000000000000000000000000000000a02 (`pqcKeyStatus`).
+    function pqcKeyStatus(address account) internal view returns (bool) {
         return QorePQC.isRegistered(account);
     }
 

@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:21b1c2da-81e1-5501-9ce2-c12eea9d84f3",
+  "serialNumber": "urn:uuid:158cdc83-a8ae-5fbd-b446-6c8f868914f5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-16T08:49:14Z",
+    "timestamp": "2026-11-19T19:58:45Z",
     "tools": {
       "components": [
         {
@@ -128,6 +128,96 @@
           {
             "location": "test/LatticeWard.t.sol",
             "line": 262,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 298,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 304,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 313,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 319,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 327,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 333,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 350,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 356,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 372,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 378,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 387,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 393,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 403,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 414,
+            "symbol": "keccak256",
+            "additionalContext": "Keccak-256 hash"
+          },
+          {
+            "location": "test/LatticeWard.t.sol",
+            "line": 415,
             "symbol": "keccak256",
             "additionalContext": "Keccak-256 hash"
           },
@@ -262,13 +352,120 @@
           "value": "solidity"
         }
       ]
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/ml-dsa-87",
+      "name": "ML-DSA-87",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 89,
+            "symbol": "pqcVerify",
+            "additionalContext": "QoreChain pqcVerify precompile (0x0A01): ML-DSA-87 signature verification"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 90,
+            "symbol": "pqcKeyStatus",
+            "additionalContext": "QoreChain pqcKeyStatus precompile (0x0A02): reads an account's registered ML-DSA-87 key"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 277,
+            "symbol": "pqcVerify",
+            "additionalContext": "QoreChain pqcVerify precompile (0x0A01): ML-DSA-87 signature verification"
+          },
+          {
+            "location": "LatticeWardVault.sol",
+            "line": 282,
+            "symbol": "pqcKeyStatus",
+            "additionalContext": "QoreChain pqcKeyStatus precompile (0x0A02): reads an account's registered ML-DSA-87 key"
+          },
+          {
+            "location": "interfaces/IQorePrecompiles.sol",
+            "line": 4,
+            "symbol": "pqcVerify",
+            "additionalContext": "QoreChain pqcVerify precompile (0x0A01): ML-DSA-87 signature verification"
+          },
+          {
+            "location": "interfaces/IQorePrecompiles.sol",
+            "line": 5,
+            "symbol": "pqcKeyStatus",
+            "additionalContext": "QoreChain pqcKeyStatus precompile (0x0A02): reads an account's registered ML-DSA-87 key"
+          },
+          {
+            "location": "libraries/QorePQC.sol",
+            "line": 19,
+            "symbol": "pqcVerify",
+            "additionalContext": "QoreChain pqcVerify precompile (0x0A01): ML-DSA-87 signature verification"
+          },
+          {
+            "location": "libraries/QorePQC.sol",
+            "line": 20,
+            "symbol": "pqcKeyStatus",
+            "additionalContext": "QoreChain pqcKeyStatus precompile (0x0A02): reads an account's registered ML-DSA-87 key"
+          },
+          {
+            "location": "libraries/QorePQC.sol",
+            "line": 59,
+            "symbol": "pqcVerify",
+            "additionalContext": "QoreChain pqcVerify precompile (0x0A01): ML-DSA-87 signature verification"
+          },
+          {
+            "location": "libraries/QorePQC.sol",
+            "line": 68,
+            "symbol": "pqcKeyStatus",
+            "additionalContext": "QoreChain pqcKeyStatus precompile (0x0A02): reads an account's registered ML-DSA-87 key"
+          }
+        ]
+      },
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "signature",
+          "parameterSetIdentifier": "87",
+          "cryptoFunctions": [
+            "keygen",
+            "sign",
+            "verify"
+          ],
+          "classicalSecurityLevel": 256,
+          "nistQuantumSecurityLevel": 5
+        },
+        "oid": "2.16.840.1.101.3.4.3.19"
+      },
+      "properties": [
+        {
+          "name": "qorescan:classification",
+          "value": "post-quantum"
+        },
+        {
+          "name": "qorescan:transition",
+          "value": "Not scheduled for deprecation by NIST IR 8547"
+        },
+        {
+          "name": "qorescan:standard",
+          "value": "FIPS 204"
+        },
+        {
+          "name": "qorescan:family",
+          "value": "ML-DSA"
+        },
+        {
+          "name": "qorescan:source",
+          "value": "solidity"
+        }
+      ]
     }
   ],
   "dependencies": [
     {
       "ref": "target",
       "dependsOn": [
-        "crypto/algorithm/keccak-256"
+        "crypto/algorithm/keccak-256",
+        "crypto/algorithm/ml-dsa-87"
       ]
     }
   ]

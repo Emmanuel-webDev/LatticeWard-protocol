@@ -50,7 +50,7 @@ packages/web/         Vite + React + TypeScript frontend (0x0A02 Quantum Status 
 packages/relayer/     Stateless serverless relayer + CORS evm-window proxy (Vercel)
 scripts/              probe-precompiles.ts, check-window.ts, convert-fusd.ts, fund-vault.ts, gen-sovereign-key.ts, sovereign-cli.ts, verify-qday.ts
 audits/               qorescan_stage1.json (@qorechain/qorescan static analysis report)
-docs:                 THREAT_MODEL.md, AI_USAGE.md, DRILL_RUNBOOK.md, USABILITY_TEST.md, LICENSE
+docs:                 THREAT_MODEL.md, AI_USAGE.md, SUBMISSION_COPY.md, DRILL_RUNBOOK.md, USABILITY_TEST.md, LICENSE
 ```
 
 ---
@@ -61,7 +61,7 @@ docs:                 THREAT_MODEL.md, AI_USAGE.md, DRILL_RUNBOOK.md, USABILITY_
 npm install
 npm --prefix packages/web install
 
-# 1. Smart Contract Suite (36/36 unit, fuzz, hardening & invariant tests)
+# 1. Smart Contract Suite (39/39 unit, fuzz, hardening & invariant tests)
 forge test -vv
 
 # 2. TypeScript & Production Web Build

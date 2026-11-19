@@ -287,4 +287,159 @@ contract LatticeWardTest is Test {
             ReentrancyGuard.ReentrancyGuardReentrantCall.selector
         );
     }
+
+    // ───── 4. Scoped Duration, Expiry Windows & Rolling Epoch Reset ────
+    /// @notice Explicitly verifies intent deadline expiry (`IntentExpired`), rolling daily/epoch duration
+    ///         spend limit (`ExceedsEpochSpendLimit`) + epoch reset after `epochDuration`, and global
+    ///         vault authorization window expiry (`WindowExpired`).
+    function test_ScopedDurationAndExpiryWindowsEnforced() public {
+        // 4a. Per-intent deadline expired -> reverts IntentExpired
+        LatticeWardVault.Intent memory expiredIntent = LatticeWardVault.Intent({
+            intentId: keccak256("expired-deadline"),
+            target: address(0),
+            recipient: pqcRecipient,
+            value: 0.5 ether,
+            deadline: block.timestamp - 1,
+            riskScoreBps: 100,
+            rationaleHash: keccak256("expired")
+        });
+        vm.prank(leakedAgentAddr);
+        vm.expectRevert(LatticeWardVault.IntentExpired.selector);
+        vault.executeScopedAgentIntent(expiredIntent);
+
+        // 4b. Spend up to the 2 ether daily/epoch limit across two 1-ether intents
+        for (uint256 i = 0; i < 2; i++) {
+            LatticeWardVault.Intent memory okIntent = LatticeWardVault.Intent({
+                intentId: keccak256(abi.encode("epoch-fill", i)),
+                target: address(0),
+                recipient: pqcRecipient,
+                value: 1 ether,
+                deadline: block.timestamp + 1 hours,
+                riskScoreBps: 100,
+                rationaleHash: keccak256("ok")
+            });
+            vm.prank(leakedAgentAddr);
+            vault.executeScopedAgentIntent(okIntent);
+        }
+
+        // Third payment inside the same 1-day epoch exceeds the 2 ether epochLimit
+        LatticeWardVault.Intent memory overEpochIntent = LatticeWardVault.Intent({
+            intentId: keccak256("over-epoch"),
+            target: address(0),
+            recipient: pqcRecipient,
+            value: 0.5 ether,
+            deadline: block.timestamp + 1 hours,
+            riskScoreBps: 100,
+            rationaleHash: keccak256("over-epoch")
+        });
+        vm.prank(leakedAgentAddr);
+        vm.expectRevert(
+            abi.encodeWithSelector(LatticeWardVault.ExceedsEpochSpendLimit.selector, 2.5 ether, 2 ether)
+        );
+        vault.executeScopedAgentIntent(overEpochIntent);
+
+        // Advancing time by epochDuration (1 day) resets the rolling epoch window
+        vm.warp(block.timestamp + 1 days);
+        overEpochIntent.deadline = block.timestamp + 1 hours;
+        vm.prank(leakedAgentAddr);
+        vault.executeScopedAgentIntent(overEpochIntent);
+
+        // 4c. Advancing past the vault's global windowExpiresAt reverts WindowExpired
+        vm.warp(vault.windowExpiresAt() + 1);
+        LatticeWardVault.Intent memory afterWindow = LatticeWardVault.Intent({
+            intentId: keccak256("after-window"),
+            target: address(0),
+            recipient: pqcRecipient,
+            value: 0.1 ether,
+            deadline: block.timestamp + 1 hours,
+            riskScoreBps: 100,
+            rationaleHash: keccak256("late")
+        });
+        vm.prank(leakedAgentAddr);
+        vm.expectRevert(LatticeWardVault.WindowExpired.selector);
+        vault.executeScopedAgentIntent(afterWindow);
+    }
+
+    // ───── 5. Allowed Target / Asset & Recipient 0x0A02 Enforcement ────
+    /// @notice Verifies allowed target/asset allowlist (`AssetNotAllowed`), 0x0A02 recipient quantum-safety
+    ///         firewall (`RecipientNotQuantumSafe`), and invalid recipient protection (`InvalidRecipient`).
+    function test_AllowedTargetAndRecipientFirewallEnforced() public {
+        MockERC20 rogueToken = new MockERC20();
+        rogueToken.mint(address(vault), 1000e6);
+
+        // 5a. Unlisted asset target reverts AssetNotAllowed
+        LatticeWardVault.Intent memory unlistedTarget = LatticeWardVault.Intent({
+            intentId: keccak256("unlisted-target"),
+            target: address(rogueToken),
+            recipient: pqcRecipient,
+            value: 10e6,
+            deadline: block.timestamp + 1 hours,
+            riskScoreBps: 100,
+            rationaleHash: keccak256("rogue-asset")
+        });
+        vm.prank(leakedAgentAddr);
+        vm.expectRevert(abi.encodeWithSelector(LatticeWardVault.AssetNotAllowed.selector, address(rogueToken)));
+        vault.executeScopedAgentIntent(unlistedTarget);
+
+        // 5b. Non-PQC recipient target (0x0A02 returns false) reverts RecipientNotQuantumSafe
+        address classicalOnlyRecipient = address(0x123456);
+        LatticeWardVault.Intent memory unsafeRecipient = LatticeWardVault.Intent({
+            intentId: keccak256("unsafe-recipient"),
+            target: address(0),
+            recipient: classicalOnlyRecipient,
+            value: 0.1 ether,
+            deadline: block.timestamp + 1 hours,
+            riskScoreBps: 100,
+            rationaleHash: keccak256("unsafe")
+        });
+        vm.prank(leakedAgentAddr);
+        vm.expectRevert(
+            abi.encodeWithSelector(LatticeWardVault.RecipientNotQuantumSafe.selector, classicalOnlyRecipient)
+        );
+        vault.executeScopedAgentIntent(unsafeRecipient);
+
+        // 5c. Vault paying itself or address(0) reverts InvalidRecipient
+        LatticeWardVault.Intent memory selfTarget = unsafeRecipient;
+        selfTarget.intentId = keccak256("self-target");
+        selfTarget.recipient = address(vault);
+        vm.prank(leakedAgentAddr);
+        vm.expectRevert(abi.encodeWithSelector(LatticeWardVault.InvalidRecipient.selector, address(vault)));
+        vault.executeScopedAgentIntent(selfTarget);
+    }
+
+    // ───── 6. Authenticated Agent Intent Messaging & Replay Defense ────
+    /// @notice Verifies authenticated agent messaging (`NotAgent`, `AuthenticatedAgentIntentExecuted` event
+    ///         emission, `usedIntents` state commit, and `IntentAlreadyUsed` replay rejection).
+    function test_AuthenticatedAgentIntentMessagingAndReplayDefense() public {
+        bytes32 id = keccak256("auth-intent-msg-1");
+        bytes32 rationale = keccak256("invoice-2026-11");
+        LatticeWardVault.Intent memory intent = LatticeWardVault.Intent({
+            intentId: id,
+            target: address(fUSD),
+            recipient: pqcRecipient,
+            value: 25e6,
+            deadline: block.timestamp + 1 hours,
+            riskScoreBps: 250,
+            rationaleHash: rationale
+        });
+
+        // Non-agent caller cannot spoof an authenticated agent intent
+        vm.prank(attackerEoa);
+        vm.expectRevert(LatticeWardVault.NotAgent.selector);
+        vault.executeScopedAgentIntent(intent);
+
+        // Authenticated agentKey executes and emits AuthenticatedAgentIntentExecuted
+        vm.expectEmit(true, true, true, true, address(vault));
+        emit LatticeWardVault.AuthenticatedAgentIntentExecuted(
+            id, address(fUSD), pqcRecipient, 25e6, 250, rationale
+        );
+        vm.prank(leakedAgentAddr);
+        vault.executeScopedAgentIntent(intent);
+        assertTrue(vault.usedIntents(id));
+
+        // Replaying the same authenticated intentId reverts IntentAlreadyUsed
+        vm.prank(leakedAgentAddr);
+        vm.expectRevert(abi.encodeWithSelector(LatticeWardVault.IntentAlreadyUsed.selector, id));
+        vault.executeScopedAgentIntent(intent);
+    }
 }

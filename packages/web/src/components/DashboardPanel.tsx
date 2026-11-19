@@ -341,6 +341,13 @@ export function DashboardPanel({
             <div className="tabular" style={{ marginTop: 8 }}>
               <strong>Policy Nonce:</strong> <code>{vault.policyNonce.toString()}</code>
             </div>
+            <div className="tabular" style={{ marginTop: 4 }}>
+              <strong>Window Expiry:</strong>{" "}
+              <span className="muted">{new Date(vault.windowExpiresAt * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC</span>
+            </div>
+            <div className="tabular" style={{ marginTop: 4 }}>
+              <strong>Epoch Duration:</strong> <span className="muted">{Math.round(vault.epochDuration / 3600)}h rolling</span>
+            </div>
             <div style={{ marginTop: 6 }}>
               <strong>Active Agent Key:</strong>
               <div className="mono muted">{vault.agentKey}</div>

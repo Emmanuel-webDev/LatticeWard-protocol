@@ -10,7 +10,7 @@ import {
   fetchUserVaults,
   fetchVaultSnapshot,
 } from "./lib/chain";
-import { DEFAULT_RELAYER_URL, REFERENCE_VAULT_ADDRESS } from "./lib/constants";
+import { DEFAULT_RELAYER_URL, FACTORY_ADDRESS, FUSD_ADDRESS, REFERENCE_VAULT_ADDRESS } from "./lib/constants";
 import {
   type BrowserKeySigner,
   type EncryptedKeyBackup,
@@ -158,6 +158,7 @@ export function App() {
       return;
     }
     try {
+      const targetVault = selectedVaultAddr && isAddress(selectedVaultAddr) ? selectedVaultAddr : REFERENCE_VAULT_ADDRESS;
       const res = await qorex.native.signAndBroadcast({
         chainId: "qorechain-diana",
         messages: [
@@ -169,11 +170,11 @@ export function App() {
               maxTxs: "50",
               maxValue: "50000000",
               nativeOnly: false,
-              allowedTargets: [],
+              allowedTargets: [targetVault, FUSD_ADDRESS, FACTORY_ADDRESS],
             } as unknown as Uint8Array,
           },
         ],
-        memo: "LatticeWard open EVM window",
+        memo: "LatticeWard open scoped EVM window",
       });
       setWalletInfo(`EVM window opened via QoreX (tx ${res.txHash.slice(0, 14)}...).`);
       void refreshChainState();

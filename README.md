@@ -1,5 +1,7 @@
 # LatticeWard
 
+[![Built on QoreChain](https://build.qorechain.io/badge/latticeward.svg)](https://build.qorechain.io/p/latticeward)
+
 **Post-quantum spend-governance & Q-Day immunity engine for autonomous AI agents on QoreChain.**
 
 Built for the QoreChain Developer Fest **"Build Before Q-Day"** (Post-Quantum AI Agents track). Target network: `qorechain-diana` (EVM Chain ID `9800`).
@@ -32,8 +34,8 @@ flowchart TD
 
 | Plane | Key | Allowed Actions | On-Chain Enforcement |
 |---|---|---|---|
-| **Execution (Plane 1)** | Disposable `secp256k1` `agentKey` | Pay out inside a scoped window: per-asset `maxTxValue`, rolling `epochLimit` (daily limit), `windowExpiresAt`, asset allowlist (`assetLimits`), replay-protected intents (`usedIntents`), recipient must pass `QorePQC.isRegistered` / `IPqcKeyStatus.pqcKeyStatus` (`0x0A02`) | `LatticeWardVault.executeScopedAgentIntent` (`nonReentrant`) |
-| **Sovereign (Plane 2)** | `ML-DSA-87` (FIPS 204) | `configurePolicy`, `setAssetLimit`, `sovereignWithdraw`, `triggerQDayEmergencyClawback` (`emergencyClawback`), `rotateSovereignKey` | `QorePQC.verify` / `IPqcVerify.pqcVerify` (`0x0A01`) over `sovereignDigest` bound to `block.chainid` + `address(this)` + `policyNonce++` + `tag` + `keccak256(params)` |
+| **Execution (Plane 1)** | Disposable `secp256k1` `agentKey` | Pay out inside a scoped window: per-asset `maxTxValue`, rolling `epochLimit` (daily limit), `windowExpiresAt`, asset allowlist (`assetLimits`), replay-protected intents (`usedIntents`), recipient must pass `QorePQC.isRegistered` / `IPQCKeyStatus(0x0000000000000000000000000000000000000A02).pqcKeyStatus` (`0x0A02`) | `LatticeWardVault.executeScopedAgentIntent` (`nonReentrant`) |
+| **Sovereign (Plane 2)** | `ML-DSA-87` (FIPS 204) | `configurePolicy`, `setAssetLimit`, `sovereignWithdraw`, `triggerQDayEmergencyClawback` (`emergencyClawback`), `rotateSovereignKey` | `QorePQC.verify` / `IPQCVerify(0x0000000000000000000000000000000000000A01).pqcVerify` (`0x0A01`) over `sovereignDigest` bound to `block.chainid` + `address(this)` + `policyNonce++` + `tag` + `keccak256(params)` |
 
 The vault has **no `ecrecover` and no `onlyOwner`**. `msg.sender` carries zero administrative authority, so a leaked classical key cannot escalate privileges, alter limits, or drain the treasury.
 
@@ -73,7 +75,10 @@ cp .env.example .env              # populate testnet RPC & keys
 npm run probe                     # verify live 0x0A01 & 0x0A02 precompile ABIs
 npm run check:windows             # inspect PQC registration & EVM window status
 npm run verify:qday               # run 8-scenario live Q-Day breach drill
-npm run mcp                       # start 5-tool MCP server over stdio
+npm run mcp                       # start LatticeWard 5-tool MCP server over stdio
+npm run mcp:qorechain             # start @qorechain/mcp (qorechain-mcp) server (configured in .mcp.json & .cursor/mcp.json)
+npm run qore:status               # query qorechain-diana via qore CLI (@qorechain/qore-cli)
+npm run qore:inspect              # inspect PQC registration status via qore CLI
 
 # 4. Run Local Web UI
 cd packages/web && npm run dev    # http://127.0.0.1:5173

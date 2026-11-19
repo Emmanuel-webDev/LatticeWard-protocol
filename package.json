@@ -14,6 +14,9 @@
     "gen:sovereign": "tsx scripts/gen-sovereign-key.ts",
     "sovereign": "tsx scripts/sovereign-cli.ts",
     "mcp": "tsx packages/agent-mcp/src/mcp-server.ts",
+    "mcp:qorechain": "npx -y @qorechain/mcp",
+    "qore:status": "qore status --network qorechain-diana",
+    "qore:inspect": "qore pqc status qor166y3unhk00s8kh0fwq7ucn8ndm6dzk4w0gq3kx --network qorechain-diana",
     "verify:qday": "tsx scripts/verify-qday.ts",
     "test:contracts": "forge test -vv"
   },
@@ -26,6 +29,8 @@
     "zod": "^3.23.8"
   },
   "optionalDependencies": {
+    "@qorechain/mcp": "^0.1.0",
+    "@qorechain/qore-cli": "^0.1.0",
     "@qorechain/sdk": "^0.14.0"
   },
   "devDependencies": {

@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "qorechain": {
+      "command": "npx",
+      "args": ["-y", "@qorechain/mcp"],
+      "env": {
+        "QORECHAIN_NETWORK": "qorechain-diana",
+        "QORECHAIN_REST_URL": "https://api-testnet.qore.host",
+        "QORECHAIN_EVM_RPC_URL": "https://evm-testnet.qore.host"
+      }
+    },
+    "latticeward": {
+      "command": "npx",
+      "args": ["tsx", "packages/agent-mcp/src/mcp-server.ts"],
+      "env": {
+        "QOR_EVM_RPC": "https://evm-testnet.qore.host",
+        "QOR_REST_API": "https://api-testnet.qore.host",
+        "QOR_CHAIN_ID": "9800",
+        "VAULT_ADDRESS": "0x9697a96058555b3A0C50b2338440C84B927caB29",
+        "FUSD_ADDRESS": "0x97143B771D34ddb9130b807b135Ae675A5a963CA"
+      }
+    }
+  }
+}

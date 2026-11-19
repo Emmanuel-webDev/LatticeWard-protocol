@@ -86,8 +86,8 @@ contract LatticeWardVault is ReentrancyGuard {
     }
 
     // ───────────────────────────── state ──────────────────────────────
-    address public constant PQC_VERIFY_PRECOMPILE = address(uint160(0x0A01));
-    address public constant PQC_KEY_STATUS_PRECOMPILE = address(uint160(0x0A02));
+    address public constant PQC_VERIFY_PRECOMPILE = 0x0000000000000000000000000000000000000a01; // 0x0A01
+    address public constant PQC_KEY_STATUS_PRECOMPILE = 0x0000000000000000000000000000000000000a02; // 0x0A02
 
     uint256 public constant MAX_EPOCH_DURATION = 365 days; // bounds epoch math; huge values could overflow/DoS the agent lane
     uint256 public constant MAX_RISK_SCORE_BPS = 10_000;

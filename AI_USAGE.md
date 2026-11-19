@@ -43,8 +43,8 @@ No AI-generated code was trusted blindly. Every security-critical boundary was d
    - The MCP host LLM (Claude Desktop / Cursor) can only emit a strict discriminated union (`EXECUTE_WITHIN_SCOPE` or `REJECT_OUT_OF_POLICY`). Any prompt-injected instruction attempting to call `configurePolicy`, `setAssetLimit`, or `sovereignWithdraw` is impossible to express in the agent grammar and is rejected before any RPC call.
 2. **Protocol-Level AI Risk Pre-Flight ([packages/agent-mcp/src/preflight.ts](./packages/agent-mcp/src/preflight.ts)):**
    - Wired to `@qorechain/sdk`'s `simulateWithRiskScore` (`@qorechain/evm`) as a fail-closed gate prior to transaction broadcast.
-3. **5-Tool MCP Server ([packages/agent-mcp/src/mcp-server.ts](./packages/agent-mcp/src/mcp-server.ts)):**
-   - Exposes `latticeward_get_vault_and_pqc_status`, `latticeward_simulate_agent_intent`, `latticeward_execute_scoped_settlement`, `latticeward_trigger_qday_breach_drill`, and `latticeward_verify_pqc_receipt`.
+3. **5-Tool MCP Server & `@qorechain/mcp` + `qore` CLI Integration ([packages/agent-mcp/src/mcp-server.ts](./packages/agent-mcp/src/mcp-server.ts), [.mcp.json](./.mcp.json), [.cursor/mcp.json](./.cursor/mcp.json)):**
+   - Exposes `latticeward_get_vault_and_pqc_status`, `latticeward_simulate_agent_intent`, `latticeward_execute_scoped_settlement`, `latticeward_trigger_qday_breach_drill`, and `latticeward_verify_pqc_receipt` alongside `@qorechain/mcp` (`npx -y @qorechain/mcp` / `qorechain-mcp`) and `@qorechain/qore-cli` (`qore status`, `qore pqc status`).
 
 ---
 

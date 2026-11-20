@@ -49,6 +49,9 @@ export interface VerdictLedgerEntry {
   index: number;
   timestamp: string;
   proposalId: string;
+  invoiceId?: string;
+  enforcementLayer?: "off-chain gate" | "on-chain";
+  preflightStatus?: "ok" | "preflight_unavailable" | "failed";
   agentAddress: string;
   targetContract: string;
   recipientAddress: string;
@@ -72,6 +75,7 @@ export async function createSignedAgentProposal(opts: {
   nonce: bigint;
   gasLimit?: bigint;
   rationale: string;
+  intentIdOverride?: string;
   chainId?: string;
 }): Promise<{ proposal: SignedAgentIntentProposal; calldataHex: string }> {
   const chainId = opts.chainId ?? DEFAULT_COSMOS_CHAIN_ID;
@@ -84,9 +88,11 @@ export async function createSignedAgentProposal(opts: {
   const recipientAddress = getAddress(opts.recipientAddress);
   const deadlineUnix = opts.deadlineUnix ?? Math.floor(Date.now() / 1000) + 900;
   const gasLimit = opts.gasLimit ?? 300_000n;
-  const proposalId = keccak256(
-    toUtf8Bytes(`${opts.abstractAccountCosmos}:${opts.nonce.toString()}:${recipientAddress}:${opts.valueWei.toString()}:${Date.now()}`),
-  );
+  const proposalId =
+    opts.intentIdOverride ??
+    keccak256(
+      toUtf8Bytes(`${opts.abstractAccountCosmos}:${opts.nonce.toString()}:${recipientAddress}:${opts.valueWei.toString()}:${Date.now()}`),
+    );
 
   const iface = new Interface(VAULT_ABI);
   const calldataHex = iface.encodeFunctionData("executeScopedAgentIntent", [
@@ -201,6 +207,11 @@ export function appendVerdictLedger(
   verdict: PolicyEvaluationVerdict,
   txHash: string | null = null,
   ledgerPath = VERDICT_LEDGER_PATH,
+  meta?: {
+    invoiceId?: string;
+    enforcementLayer?: "off-chain gate" | "on-chain";
+    preflightStatus?: "ok" | "preflight_unavailable" | "failed";
+  },
 ): VerdictLedgerEntry {
   mkdirSync(dirname(ledgerPath), { recursive: true });
   let prevHash = "0x" + "0".repeat(64);
@@ -223,6 +234,9 @@ export function appendVerdictLedger(
     index,
     timestamp,
     proposalId: proposal.proposalId,
+    ...(meta?.invoiceId ? { invoiceId: meta.invoiceId } : {}),
+    ...(meta?.enforcementLayer ? { enforcementLayer: meta.enforcementLayer } : {}),
+    ...(meta?.preflightStatus ? { preflightStatus: meta.preflightStatus } : {}),
     agentAddress: proposal.agentAddress,
     targetContract: proposal.targetContract,
     recipientAddress: proposal.recipientAddress,

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "description": "Off-chain payee allowlist and per-payee spend caps enforced before signing any agent payout.",
+  "defaultPreflightMode": "required",
+  "payees": [
+    {
+      "address": "0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae",
+      "label": "LatticeWard Paid Data API (0x0A02 Registered)",
+      "maxTxQor": "0.05",
+      "maxDailyQor": "0.20",
+      "maxTxFusd": "1.0",
+      "maxDailyFusd": "3.0"
+    },
+    {
+      "address": "0x480261F742b3CfA5f1659da6FAd089BDB6CFD0B3",
+      "label": "Vault Treasury Owner (0x0A02 Registered)",
+      "maxTxQor": "0.10",
+      "maxDailyQor": "0.30",
+      "maxTxFusd": "1.0",
+      "maxDailyFusd": "3.0"
+    }
+  ]
+}

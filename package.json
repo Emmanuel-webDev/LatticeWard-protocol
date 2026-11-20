@@ -20,6 +20,9 @@
     "setup:aa": "tsx scripts/setup-abstract-account.ts",
     "verify:defense": "tsx scripts/verify-defense.ts",
     "verify:qday": "tsx scripts/verify-qday.ts",
+    "api:paid": "tsx examples/agent-pays-api/server.ts",
+    "agent:buy": "tsx scripts/agent-buys-data.ts",
+    "test:agent-pays": "tsx scripts/test-agent-pays-e2e.ts",
     "test:contracts": "forge test -vv"
   },
   "dependencies": {

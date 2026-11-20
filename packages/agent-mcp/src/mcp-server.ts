@@ -46,6 +46,42 @@ server.tool(
 );
 
 server.tool(
+  "latticeward_pay_invoice",
+  "Pay a 402 invoice from the vault with intentId = keccak256(invoiceId) and rationaleHash = keccak256(description), enforced by off-chain payee policy gate, 0x0A02 firewall, and on-chain vault caps. If apiUrl is given, retries GET /data?invoice=<id> after payment.",
+  {
+    invoiceId: z.string().min(1).describe("Invoice ID returned by the 402 API"),
+    amount: z.string().regex(/^\d+(\.\d+)?$/).describe("Amount in QOR or fUSD"),
+    asset: z.enum(["QOR", "fUSD"]).default("QOR"),
+    recipient: addr.describe("0x0A02 quantum-safe payee address"),
+    description: z.string().min(1).max(200).describe("Human description hashed into rationaleHash"),
+    apiUrl: z.string().url().optional().describe("Optional paid API base URL (e.g. http://127.0.0.1:4020) to retry after payment"),
+    dryRun: z.boolean().optional().default(false),
+  },
+  async ({ invoiceId, amount, asset, recipient, description, apiUrl, dryRun }) => {
+    const settlement = await executeScopedSettlement(
+      {
+        action: "EXECUTE_WITHIN_SCOPE",
+        asset,
+        recipient,
+        amount,
+        rationale: description,
+      },
+      dryRun,
+      { invoiceId },
+    );
+
+    if (!settlement.ok || dryRun || !apiUrl) {
+      return text({ invoiceId, settlement });
+    }
+
+    const base = apiUrl.replace(/\/+$/, "");
+    const res = await fetch(`${base}/data?invoice=${encodeURIComponent(invoiceId)}`);
+    const apiBody = await res.json().catch(() => ({}));
+    return text({ invoiceId, settlement, apiStatus: res.status, apiData: apiBody });
+  },
+);
+
+server.tool(
   "latticeward_run_qday_breach_drill",
   "Run the live Q-Day drill on qorechain-diana: valid payout, over-spend, non-PQC recipient, leaked-key policy hijack + drain, replay, ML-DSA-87 clawback and recovery.",
   {},

@@ -17,6 +17,8 @@
     "mcp:qorechain": "npx -y @qorechain/mcp",
     "qore:status": "qore status --network qorechain-diana",
     "qore:inspect": "qore pqc status qor166y3unhk00s8kh0fwq7ucn8ndm6dzk4w0gq3kx --network qorechain-diana",
+    "setup:aa": "tsx scripts/setup-abstract-account.ts",
+    "verify:defense": "tsx scripts/verify-defense.ts",
     "verify:qday": "tsx scripts/verify-qday.ts",
     "test:contracts": "forge test -vv"
   },

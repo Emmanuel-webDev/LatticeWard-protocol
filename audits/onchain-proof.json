@@ -1,0 +1,739 @@
+{
+  "network": "qorechain-diana",
+  "chainId": 9800,
+  "vaultAddress": "0x9697a96058555b3A0C50b2338440C84B927caB29",
+  "verifiedAt": "2026-11-20T06:11:42.558Z",
+  "allPassed": true,
+  "deployerAbstractAccountSetup": {
+    "ownerCosmos": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+    "ownerEvm": "0x480261F742b3CfA5f1659da6FAd089BDB6CFD0B3",
+    "agentEvm": "0xc40352672Ac28fD9DE498AbE2c3CedF9367FDE04",
+    "pubkeyHex": "0xc40352672ac28fd9de498abe2c3cedf9367fde04",
+    "txHash": "499C80BD15C0A0DCEE2721BD606CE803C90890BB9367767D30F5B93A4D22A365",
+    "height": 10416953,
+    "code": 0,
+    "rawLog": "",
+    "ruleConfig": {
+      "id": "latticeward-vault-only",
+      "perTxLimitUqor": "100000",
+      "dailyLimitUqor": "300000",
+      "allowedEvmCalls": [
+        "0x9697a96058555b3A0C50b2338440C84B927caB29"
+      ],
+      "expiryUnix": 1795241420,
+      "label": "latticeward-scoped-agent"
+    },
+    "onChainRules": {
+      "rules": [
+        {
+          "id": "latticeward-vault-only",
+          "dailyLimit": "300000",
+          "perTxLimit": "100000",
+          "allowedDenoms": [
+            "uqor"
+          ],
+          "enabled": true,
+          "allowedEvmCalls": [
+            "0x9697a96058555b3A0C50b2338440C84B927caB29"
+          ],
+          "denomLimits": [
+            {
+              "denom": "uqor",
+              "perTxLimit": "100000",
+              "dailyLimit": "300000"
+            }
+          ]
+        }
+      ],
+      "authenticatorRules": []
+    },
+    "onChainAuthenticators": [
+      {
+        "scheme": "secp256k1",
+        "pubkeyHex": "c40352672ac28fd9de498abe2c3cedf9367fde04",
+        "permissions": [
+          "evm",
+          "send"
+        ],
+        "expiryUnix": "1795241420",
+        "label": "latticeward-scoped-agent",
+        "createdAtUnix": "1795155022",
+        "revoked": false,
+        "hasSpendRule": false
+      }
+    ],
+    "authNonce": "0"
+  },
+  "drillAbstractAccountSetup": {
+    "ownerCosmos": "qor166y3unhk00s8kh0fwq7ucn8ndm6dzk4w0gq3kx",
+    "ownerEvm": "0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae",
+    "txHash": "2C9A0661A4CE89EF9EF40C7C112660B6B4774EC5E60BEA33F03AEDBE8FCC9E92",
+    "height": 10416963,
+    "code": 0,
+    "rawLog": "",
+    "ruleConfig": {
+      "id": "latticeward-vault-only",
+      "perTxLimitUqor": "100000",
+      "dailyLimitUqor": "300000",
+      "allowedEvmCalls": [
+        "0x9697a96058555b3A0C50b2338440C84B927caB29"
+      ],
+      "expiryUnix": 1795241436,
+      "label": "latticeward-scoped-agent"
+    },
+    "onChainRules": {
+      "rules": [
+        {
+          "id": "latticeward-vault-only",
+          "dailyLimit": "300000",
+          "perTxLimit": "100000",
+          "allowedDenoms": [
+            "uqor"
+          ],
+          "enabled": true,
+          "allowedEvmCalls": [
+            "0x9697a96058555b3A0C50b2338440C84B927caB29"
+          ],
+          "denomLimits": [
+            {
+              "denom": "uqor",
+              "perTxLimit": "100000",
+              "dailyLimit": "300000"
+            }
+          ]
+        }
+      ],
+      "authenticatorRules": []
+    }
+  },
+  "finalOnChainSpendingRules": {
+    "rules": [
+      {
+        "id": "latticeward-vault-only",
+        "dailyLimit": "300000",
+        "perTxLimit": "100000",
+        "allowedDenoms": [
+          "uqor"
+        ],
+        "enabled": true,
+        "allowedEvmCalls": [
+          "0x9697a96058555b3A0C50b2338440C84B927caB29"
+        ],
+        "denomLimits": [
+          {
+            "denom": "uqor",
+            "perTxLimit": "100000",
+            "dailyLimit": "300000"
+          }
+        ]
+      }
+    ],
+    "authenticatorRules": []
+  },
+  "finalOnChainAuthenticators": [
+    {
+      "scheme": "secp256k1",
+      "pubkeyHex": "c40352672ac28fd9de498abe2c3cedf9367fde04",
+      "permissions": [
+        "evm",
+        "send"
+      ],
+      "expiryUnix": "1795241496",
+      "label": "latticeward-scoped-agent",
+      "createdAtUnix": "1795155096",
+      "revoked": false,
+      "hasSpendRule": false
+    }
+  ],
+  "defenseVerificationTests": [
+    {
+      "id": "test-1-in-policy-execution",
+      "passed": true,
+      "verdict": {
+        "index": 0,
+        "timestamp": "2026-11-20T06:11:04.109Z",
+        "proposalId": "0x2049ddb352209c08cf1e1b0fcbcd954059a9f0b20c03b12ac27cbaa50349ae25",
+        "agentAddress": "0xc40352672Ac28fD9DE498AbE2c3CedF9367FDE04",
+        "targetContract": "0x9697a96058555b3A0C50b2338440C84B927caB29",
+        "recipientAddress": "0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae",
+        "valueUqor": "1000",
+        "verdict": "ALLOW",
+        "rejectionReason": null,
+        "checks": {
+          "txAndNonceValid": true,
+          "valueWithinCap": true,
+          "durationValid": true,
+          "targetAllowlisted": true,
+          "recipientQuantumSafe0x0A02": true,
+          "signatureVerified": true
+        },
+        "txHash": "88466A5774F01900165F26A4221671498B59231343D85853829BF1698532FB29",
+        "prevHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "entryHash": "0x3f3d6c42c68d7b9e1079171947f5040d4eb416ce92db3bb13f6be9c92111260a"
+      },
+      "aaExecution": {
+        "txHash": "88466A5774F01900165F26A4221671498B59231343D85853829BF1698532FB29",
+        "height": 10416970,
+        "code": 0,
+        "rawLog": "",
+        "nonceUsed": "0",
+        "digestHex": "0x0xc9045ab3753a33703ade0e56465fa3fd6a1f36461c88ee44563cc57df0d1c528",
+        "signatureLen": 65,
+        "executionResult": null,
+        "events": [
+          {
+            "type": "pqc_verify",
+            "attributes": [
+              {
+                "key": "address",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "key_type",
+                "value": "hybrid",
+                "index": true
+              },
+              {
+                "key": "algorithm_id",
+                "value": "dilithium5",
+                "index": true
+              },
+              {
+                "key": "hybrid_mode",
+                "value": "required",
+                "index": true
+              },
+              {
+                "key": "status",
+                "value": "algorithm_active",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "pqc_hybrid_verify",
+            "attributes": [
+              {
+                "key": "address",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "algorithm_id",
+                "value": "dilithium5",
+                "index": true
+              },
+              {
+                "key": "status",
+                "value": "verified",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "ai_anomaly_check",
+            "attributes": [
+              {
+                "key": "score_millionths",
+                "value": "0",
+                "index": true
+              },
+              {
+                "key": "action",
+                "value": "allow",
+                "index": true
+              },
+              {
+                "key": "is_anomalous",
+                "value": "false",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "coin_spent",
+            "attributes": [
+              {
+                "key": "spender",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "55000uqor",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "coin_received",
+            "attributes": [
+              {
+                "key": "receiver",
+                "value": "qor17xpfvakm2amg962yls6f84z3kell8c5lyj5r7l",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "55000uqor",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "transfer",
+            "attributes": [
+              {
+                "key": "recipient",
+                "value": "qor17xpfvakm2amg962yls6f84z3kell8c5lyj5r7l",
+                "index": true
+              },
+              {
+                "key": "sender",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "55000uqor",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "attributes": [
+              {
+                "key": "sender",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "tx",
+            "attributes": [
+              {
+                "key": "fee",
+                "value": "55000uqor",
+                "index": true
+              },
+              {
+                "key": "fee_payer",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "tx",
+            "attributes": [
+              {
+                "key": "acc_seq",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea/23",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "tx",
+            "attributes": [
+              {
+                "key": "signature",
+                "value": "L8QCPXVM7B3pFQs582yj2D2H+qclyZQ2seCW9VAszYY36b0atTCb8LeipdLfvJN99OF2ulpEiTRdtMjValQ1hw==",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "attributes": [
+              {
+                "key": "action",
+                "value": "/qorechain.abstractaccount.v1.MsgExecuteEVM",
+                "index": true
+              },
+              {
+                "key": "sender",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "module",
+                "value": "abstractaccount",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "abstractaccount_execution_failed",
+            "attributes": [
+              {
+                "key": "account",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "lane",
+                "value": "evm",
+                "index": true
+              },
+              {
+                "key": "nonce",
+                "value": "0",
+                "index": true
+              },
+              {
+                "key": "reason",
+                "value": "execution reverted: evm transaction execution failed",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "test-2a-value-cap-refusal",
+      "passed": true,
+      "verdict": {
+        "index": 1,
+        "timestamp": "2026-11-20T06:11:05.706Z",
+        "proposalId": "0xba63b48e574e630243bbdee409ed3b000744b00bcdd6138945fd240ab9a9f198",
+        "agentAddress": "0xc40352672Ac28fD9DE498AbE2c3CedF9367FDE04",
+        "targetContract": "0x9697a96058555b3A0C50b2338440C84B927caB29",
+        "recipientAddress": "0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae",
+        "valueUqor": "1000000",
+        "verdict": "DENY",
+        "rejectionReason": "Requested 1000000 uqor exceeds x/abstractaccount perTxLimit (100000 uqor)",
+        "checks": {
+          "txAndNonceValid": true,
+          "valueWithinCap": false,
+          "durationValid": true,
+          "targetAllowlisted": true,
+          "recipientQuantumSafe0x0A02": true,
+          "signatureVerified": true
+        },
+        "txHash": null,
+        "prevHash": "0x3f3d6c42c68d7b9e1079171947f5040d4eb416ce92db3bb13f6be9c92111260a",
+        "entryHash": "0x16f778879ad758b00e335c2ac1f018faa754fd192ad6d6643ecde20c0e3f3bdc"
+      },
+      "onChainRevert": "ExceedsScopedMaxTxValue(1000000000000000000, 100000000000000000)"
+    },
+    {
+      "id": "test-2b-duration-expiry-refusal",
+      "passed": true,
+      "verdict": {
+        "index": 2,
+        "timestamp": "2026-11-20T06:11:08.082Z",
+        "proposalId": "0x356959f3a3b29662a67fee6efbd383769e37f0e80d42cb1a76e699f35aae4612",
+        "agentAddress": "0xc40352672Ac28fD9DE498AbE2c3CedF9367FDE04",
+        "targetContract": "0x9697a96058555b3A0C50b2338440C84B927caB29",
+        "recipientAddress": "0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae",
+        "valueUqor": "1000",
+        "verdict": "DENY",
+        "rejectionReason": "Proposal deadline (1795154465) or authenticator window (1795241415) expired at 1795155065",
+        "checks": {
+          "txAndNonceValid": true,
+          "valueWithinCap": true,
+          "durationValid": false,
+          "targetAllowlisted": true,
+          "recipientQuantumSafe0x0A02": true,
+          "signatureVerified": true
+        },
+        "txHash": null,
+        "prevHash": "0x16f778879ad758b00e335c2ac1f018faa754fd192ad6d6643ecde20c0e3f3bdc",
+        "entryHash": "0xd1a8cb477b077b4b85a9176a00c2f2b3d4e9d068cc3c6ad0864700406c569ca5"
+      },
+      "onChainRevert": "IntentExpired"
+    },
+    {
+      "id": "test-2c-target-and-0x0A02-refusal",
+      "passed": true,
+      "verdict": {
+        "index": 3,
+        "timestamp": "2026-11-20T06:11:17.559Z",
+        "proposalId": "0x9dbe370014d5fa4bc56349fae8c3eae4bdbfaf3a4fb9880edf1353046ece3915",
+        "agentAddress": "0xc40352672Ac28fD9DE498AbE2c3CedF9367FDE04",
+        "targetContract": "0x000000000000000000000000000000000000dEaD",
+        "recipientAddress": "0x000000000000000000000000000000000000dEaD",
+        "valueUqor": "1000",
+        "verdict": "DENY",
+        "rejectionReason": "Target 0x000000000000000000000000000000000000dEaD denied by x/abstractaccount allowlist (0x9697a96058555b3A0C50b2338440C84B927caB29); Recipient 0x000000000000000000000000000000000000dEaD failed 0x0A02 pqcKeyStatus quantum-safety check",
+        "checks": {
+          "txAndNonceValid": true,
+          "valueWithinCap": true,
+          "durationValid": true,
+          "targetAllowlisted": false,
+          "recipientQuantumSafe0x0A02": false,
+          "signatureVerified": true
+        },
+        "txHash": "CAEBBCFD7E7C6CF7A2F07359D09C9F212C846EA4A0E4699DBE25C30645B83536",
+        "prevHash": "0xd1a8cb477b077b4b85a9176a00c2f2b3d4e9d068cc3c6ad0864700406c569ca5",
+        "entryHash": "0xe7fa57aaaf131372cf9ece380b4554fd82a13c563fdf6d65bf0c3acf1e0209c5"
+      },
+      "aaRejection": {
+        "txHash": "CAEBBCFD7E7C6CF7A2F07359D09C9F212C846EA4A0E4699DBE25C30645B83536",
+        "height": 10416987,
+        "code": 0,
+        "rawLog": "",
+        "nonceUsed": "1",
+        "digestHex": "0x0x018db510dfe333872c91b95785a9b021c6b52b8c08892bdd1709acbc10818daa",
+        "signatureLen": 65,
+        "executionResult": null,
+        "events": [
+          {
+            "type": "pqc_verify",
+            "attributes": [
+              {
+                "key": "address",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "key_type",
+                "value": "hybrid",
+                "index": true
+              },
+              {
+                "key": "algorithm_id",
+                "value": "dilithium5",
+                "index": true
+              },
+              {
+                "key": "hybrid_mode",
+                "value": "required",
+                "index": true
+              },
+              {
+                "key": "status",
+                "value": "algorithm_active",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "pqc_hybrid_verify",
+            "attributes": [
+              {
+                "key": "address",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "algorithm_id",
+                "value": "dilithium5",
+                "index": true
+              },
+              {
+                "key": "status",
+                "value": "verified",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "ai_anomaly_check",
+            "attributes": [
+              {
+                "key": "score_millionths",
+                "value": "0",
+                "index": true
+              },
+              {
+                "key": "action",
+                "value": "allow",
+                "index": true
+              },
+              {
+                "key": "is_anomalous",
+                "value": "false",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "coin_spent",
+            "attributes": [
+              {
+                "key": "spender",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "55000uqor",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "coin_received",
+            "attributes": [
+              {
+                "key": "receiver",
+                "value": "qor17xpfvakm2amg962yls6f84z3kell8c5lyj5r7l",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "55000uqor",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "transfer",
+            "attributes": [
+              {
+                "key": "recipient",
+                "value": "qor17xpfvakm2amg962yls6f84z3kell8c5lyj5r7l",
+                "index": true
+              },
+              {
+                "key": "sender",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "55000uqor",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "attributes": [
+              {
+                "key": "sender",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "tx",
+            "attributes": [
+              {
+                "key": "fee",
+                "value": "55000uqor",
+                "index": true
+              },
+              {
+                "key": "fee_payer",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "tx",
+            "attributes": [
+              {
+                "key": "acc_seq",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea/24",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "tx",
+            "attributes": [
+              {
+                "key": "signature",
+                "value": "LPc0TbU94PPH739KMMnG3LFDIbyFWMemeoZ2IO2ZG81DFSa/Hs1Xzt0yqHTMVxRUuPwbVD8lKkp4A310ZLDiMA==",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "attributes": [
+              {
+                "key": "action",
+                "value": "/qorechain.abstractaccount.v1.MsgExecuteEVM",
+                "index": true
+              },
+              {
+                "key": "sender",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "module",
+                "value": "abstractaccount",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "abstractaccount_execution_failed",
+            "attributes": [
+              {
+                "key": "account",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
+                "index": true
+              },
+              {
+                "key": "lane",
+                "value": "evm",
+                "index": true
+              },
+              {
+                "key": "nonce",
+                "value": "1",
+                "index": true
+              },
+              {
+                "key": "reason",
+                "value": "a linked key with a spending rule may call 0x000000000000000000000000000000000000dEaD with data only if the rule lists the call in allowed_evm_calls (or lists the token as \"erc20/0x000000000000000000000000000000000000dEaD\" for a token transfer or approval): authenticator not permitted for this action",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          }
+        ]
+      },
+      "onChainRevert": "RecipientNotQuantumSafe(0x000000000000000000000000000000000000dEaD)"
+    },
+    {
+      "id": "test-3-authenticator-revocation-and-restore",
+      "passed": true,
+      "revokeTxHash": "F9AAA41814CFCB3840DD34D21ECA38DE441A5C353ABE14A4511011DEE2521B19",
+      "revokeBlock": 10416992,
+      "postRevokeAttempt": {
+        "txHash": null,
+        "height": 0,
+        "code": -1,
+        "rawLog": "permission denied - the authenticator lacks the permission this message requires (check the permission_schema) (failed to execute message; message index: 0: linked key is unbound or revoked: authenticator not permitted for this action) (tx DCD3B2B85A2A9A38C940CD884383586BFAEFC18CAC6C7C46D5D41097FCC1CC28)",
+        "executionResult": {
+          "success": false,
+          "reason": "permission denied - the authenticator lacks the permission this message requires (check the permission_schema) (failed to execute message; message index: 0: linked key is unbound or revoked: authenticator not permitted for this action) (tx DCD3B2B85A2A9A38C940CD884383586BFAEFC18CAC6C7C46D5D41097FCC1CC28)"
+        }
+      },
+      "restoreTxHash": "C58F640A324A10D889D5E75FA04F8605F5D71907B120CD29C3E135BCC6C899B0",
+      "restoreBlock": 10417005
+    }
+  ]
+}

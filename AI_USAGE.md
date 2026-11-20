@@ -15,8 +15,8 @@ We used AI coding agents (Claude / Antigravity agentic workflow) inside an itera
 
 1. **Smart Contract & Test Scaffolding (`contracts/`):**
    - Assisted with drafting `LatticeWardVault.sol`, `VaultFactory.sol`, `libraries/QorePQC.sol`, `interfaces/IQorePrecompiles.sol`, and the 5 Foundry test suites (`39/39` passing unit, fuzz, and invariant tests).
-2. **TypeScript Agent Runtime & MCP Server (`packages/agent-mcp/`, `scripts/`):**
-   - Assisted with drafting the closed Zod intent schema (`schema.ts`), the fail-closed `simulateWithRiskScore` pre-flight wrapper (`preflight.ts`), the 5-tool Model Context Protocol server (`mcp-server.ts`), the hybrid-signed `MsgConvertCoin` script (`scripts/convert-fusd.ts`), and the 8-scenario live Q-Day breach drill (`scripts/verify-qday.ts`).
+2. **TypeScript Agent Runtime, `x/abstractaccount` Pipeline & MCP Server (`src/`, `packages/agent-mcp/`, `scripts/`):**
+   - Assisted with drafting the protocol-level `x/abstractaccount` spending rules and authenticator linker (`src/abstractAccount.ts`, `scripts/setup-abstract-account.ts`), the cryptographically signed agent proposal and hash-chained verdict ledger pipeline (`src/authenticatedAgent.ts`, `scripts/verify-defense.ts`), the closed Zod intent schema (`schema.ts`), the fail-closed `simulateWithRiskScore` pre-flight wrapper (`preflight.ts`), the 5-tool Model Context Protocol server (`mcp-server.ts`), the hybrid-signed `MsgConvertCoin` script (`scripts/convert-fusd.ts`), and the 8-scenario live Q-Day breach drill (`scripts/verify-qday.ts`).
 3. **Consumer Web3 Frontend & Stateless Relayer (`packages/web/`, `packages/relayer/`):**
    - Assisted with scaffolding the Vite + React + TypeScript frontend (`BrowserKeySigner` with WebCrypto PBKDF2 + AES-256-GCM in IndexedDB, `0x0A02` Quantum Status Gate, Live Vault Telemetry Dashboard, Consumer Guardrail Configurator, Scoped Agent Intent Executor, and `0x0A01` Q-Day Emergency Kill-Switch) and the stateless serverless relayer.
 
@@ -34,6 +34,7 @@ No AI-generated code was trusted blindly. Every security-critical boundary was d
 | **4. Reentrancy & Strict Nonce Replay Defense** | Outbound native `QOR` transfers or replayed off-chain ML-DSA signatures could re-enter or replay state transitions. | Integrated OpenZeppelin `ReentrancyGuard` (`nonReentrant` on all value-moving functions) + Checks-Effects-Interactions, and enforced strict `policyNonce++` increment inside `_authorizeSovereign` bound to `block.chainid`, `address(this)`, `policyNonce`, action `tag`, and `keccak256(params)`. |
 | **5. Strict Fail-Closed AI Pre-Flight (`preflight.ts`)** | Risk of offline/mock fallbacks silently allowing high-risk transactions when RPC simulation is unreachable. | Verified via `git grep` that zero offline fallback flags exist in production code: if `@qorechain/sdk`'s `simulateWithRiskScore` errors or returns `riskScore >= threshold`, `agent.ts` fails closed and refuses to broadcast. |
 | **6. Browser Key Custody & Zero Key Leakage** | Deriving ML-DSA keys from MetaMask ECDSA signatures would re-introduce a classical bottleneck. | Designed `BrowserKeySigner` to generate true random ML-DSA-87 keys (`@noble/post-quantum`) encrypted with PBKDF2 (`310,000` iterations) + AES-256-GCM in IndexedDB, with mandatory `.lwkey.json` backup verification before vault creation. Scanned all git commits (`git log --all`) to confirm zero private keys or mnemonics were ever committed. |
+| **7. Protocol-Level `x/abstractaccount` Smart-Account Spending Rules & Hash-Chained Verdict Ledger** | Relying solely on Solidity contract checks leaves the agent account unconstrained at the Cosmos/EVM protocol boundary. | Integrated `@qorechain/sdk`'s `x/abstractaccount` (`linkAuthenticatorMsgs`, `MsgUpdateSpendingRules`, `MsgRegisterAuthenticator`, `MsgExecuteEVM`, `MsgRevokeAuthenticator`) under hybrid `eth_secp256k1 + ML-DSA-87` owner authority (`denom_limits: 100,000 uqor/tx, 300,000 uqor/day`, deny-by-default `allowed_evm_calls: [0x9697...aB29]`, 24h `expiry_unix`, EIP-191 `evmAuthSignBytesV2` authenticated proposals) and recorded every policy verdict in a hash-chained JSONL ledger (`audits/verdict-ledger.jsonl`). |
 
 ---
 
@@ -51,5 +52,6 @@ No AI-generated code was trusted blindly. Every security-critical boundary was d
 ## 4. Deterministic Verification Summary
 
 - **Foundry Tests (`forge test -vv`):** `39/39` passing across 5 test suites (including 2 invariant suites running `512` fuzz runs / `256,000` calls each with `0` reverts).
-- **Static Analysis (`@qorechain/qorescan`):** Saved in [`audits/qorescan_stage1.json`](./audits/qorescan_stage1.json).
-- **Live Testnet Verification (`npm run verify:qday`):** `8/8` checks passed live on `qorechain-diana` against `0x9697a96058555b3A0C50b2338440C84B927caB29`.
+- **Static Analysis (`@qorechain/qorescan`):** Saved in [`audits/qorescan_stage1.json`](./audits/qorescan_stage1.json) (`10` ML-DSA-87 / precompile occurrences detected).
+- **Live Testnet Q-Day Breach Drill (`npm run verify:qday`):** `8/8` checks passed live on `qorechain-diana` against `0x9697a96058555b3A0C50b2338440C84B927caB29`.
+- **Live Testnet 3-Layer `x/abstractaccount` Defense Verification (`npm run verify:defense`):** `allPassed: true` across in-policy `MsgExecuteEVM` (`88466A57...FB29`), out-of-policy value/duration/target refusals, and live authenticator revocation & restoration (`F9AAA418...1B19` / `C58F640A...99B0`), saved in [`audits/onchain-proof.json`](./audits/onchain-proof.json) and [`audits/verdict-ledger.jsonl`](./audits/verdict-ledger.jsonl).

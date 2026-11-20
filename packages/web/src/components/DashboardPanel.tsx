@@ -361,6 +361,160 @@ export function DashboardPanel({
         </div>
       </section>
 
+      {/* 1.5 Layer 1 Protocol-Level x/abstractaccount Spending Rules & Hash-Chained Verdict Ledger */}
+      <section className="card" aria-labelledby="aa-layer-heading">
+        <div className="row-wrap" style={{ justifyContent: "space-between", marginBottom: 12 }}>
+          <div>
+            <div className="eyebrow">Layer 1 · Protocol-Level Smart-Account Spending Rules</div>
+            <h2 id="aa-layer-heading" style={{ marginTop: 4 }}>
+              Native <code>x/abstractaccount</code> &amp; Authenticated Verdict Ledger
+            </h2>
+          </div>
+          <div className="row-wrap">
+            <span className="badge badge-safe">● x/abstractaccount Active</span>
+            <span className="badge badge-safe">✓ Hybrid ML-DSA-87 + secp256k1 Authority</span>
+          </div>
+        </div>
+
+        <p className="muted">
+          Before any agent proposal reaches the EVM or <code>LatticeWardVault</code>, QoreChain&apos;s native{" "}
+          <code>x/abstractaccount</code> module enforces protocol-level <code>denom_limits</code>, a deny-by-default{" "}
+          <code>allowed_evm_calls</code> target allowlist, authenticator duration expiry, and EIP-191{" "}
+          <code>evmAuthSignBytesV2</code> authenticated messaging.
+        </p>
+
+        <div className="grid-3" style={{ marginTop: 12 }}>
+          <div className="diff-box" style={{ margin: 0 }}>
+            <div className="eyebrow">On-Chain Denom &amp; Value Limits</div>
+            <div className="tabular" style={{ marginTop: 8 }}>
+              <strong>Rule ID:</strong> <code>latticeward-vault-only</code>
+            </div>
+            <div className="tabular" style={{ marginTop: 4 }}>
+              <strong>Per-Tx Cap:</strong> <code>100,000 uqor</code> (0.1 QOR)
+            </div>
+            <div className="tabular" style={{ marginTop: 4 }}>
+              <strong>Daily Spend Cap:</strong> <code>300,000 uqor</code> (0.3 QOR)
+            </div>
+            <div className="tabular" style={{ marginTop: 4 }}>
+              <strong>Allowed Denoms:</strong> <code>uqor</code>
+            </div>
+          </div>
+
+          <div className="diff-box" style={{ margin: 0 }}>
+            <div className="eyebrow">Target Allowlist &amp; Linked Authenticator</div>
+            <div style={{ marginTop: 8 }}>
+              <strong>Allowed EVM Calls (Deny-by-Default):</strong>
+              <div className="mono muted">{vault.address}</div>
+            </div>
+            <div style={{ marginTop: 6 }}>
+              <strong>Linked Authenticator (secp256k1 / EIP-191):</strong>
+              <div className="mono muted">{vault.agentKey}</div>
+            </div>
+            <div className="tabular" style={{ marginTop: 4 }}>
+              <strong>Permissions:</strong> <code>[&quot;evm&quot;, &quot;send&quot;]</code> (24h scoped expiry)
+            </div>
+          </div>
+
+          <div className="diff-box" style={{ margin: 0 }}>
+            <div className="eyebrow">Live Testnet Proof Hashes (Chain ID 9800)</div>
+            <div className="tabular" style={{ marginTop: 8 }}>
+              <strong>AA Rules &amp; Link:</strong>{" "}
+              <a
+                className="mono"
+                href={explorerTxUrl("499C80BD15C0A0DCEE2721BD606CE803C90890BB9367767D30F5B93A4D22A365")}
+                target="_blank"
+                rel="noreferrer"
+              >
+                499C80BD...A365
+              </a>
+            </div>
+            <div className="tabular" style={{ marginTop: 4 }}>
+              <strong>Drill AA Rules:</strong>{" "}
+              <a
+                className="mono"
+                href={explorerTxUrl("2C9A0661A4CE89EF9EF40C7C112660B6B4774EC5E60BEA33F03AEDBE8FCC9E92")}
+                target="_blank"
+                rel="noreferrer"
+              >
+                2C9A0661...E92
+              </a>
+            </div>
+            <div className="tabular" style={{ marginTop: 4 }}>
+              <strong>In-Policy MsgExecuteEVM:</strong>{" "}
+              <a
+                className="mono"
+                href={explorerTxUrl("88466A5774F01900165F26A4221671498B59231343D85853829BF1698532FB29")}
+                target="_blank"
+                rel="noreferrer"
+              >
+                88466A57...FB29
+              </a>
+            </div>
+            <div className="tabular" style={{ marginTop: 4 }}>
+              <strong>Revoke / Restore Proof:</strong>{" "}
+              <a
+                className="mono"
+                href={explorerTxUrl("F9AAA41814CFCB3840DD34D21ECA38DE441A5C353ABE14A4511011DEE2521B19")}
+                target="_blank"
+                rel="noreferrer"
+              >
+                F9AAA418...1B19
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <div className="eyebrow">Hash-Chained Policy Verdict Ledger (audits/verdict-ledger.jsonl)</div>
+          <ul className="checklist" style={{ marginTop: 8 }}>
+            <li className="check-item hairline-row">
+              <div>
+                <span className="badge badge-safe">ALLOW #0</span>{" "}
+                <strong className="tabular">1,000 uqor (0.001 QOR) → {vault.address.slice(0, 10)}...</strong>
+                <div className="muted mono" style={{ marginTop: 4 }}>
+                  entryHash: 0x3f3d6c42...1260a · All 6 checks passed (tx, value, duration, target, 0x0A02, EIP-191 sig)
+                </div>
+              </div>
+              <a
+                className="btn"
+                href={explorerTxUrl("88466A5774F01900165F26A4221671498B59231343D85853829BF1698532FB29")}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View Tx
+              </a>
+            </li>
+            <li className="check-item hairline-row">
+              <div>
+                <span className="badge badge-danger">DENY #1</span>{" "}
+                <strong className="tabular">1,000,000 uqor (1.0 QOR) → Value Cap Refusal</strong>
+                <div className="muted mono" style={{ marginTop: 4 }}>
+                  entryHash: 0x16f77887...3bdc · Blocked by x/abstractaccount perTxLimit (100,000 uqor) &amp; ExceedsScopedMaxTxValue
+                </div>
+              </div>
+            </li>
+            <li className="check-item hairline-row">
+              <div>
+                <span className="badge badge-danger">DENY #2</span>{" "}
+                <strong className="tabular">1,000 uqor → Expired Duration Window Refusal</strong>
+                <div className="muted mono" style={{ marginTop: 4 }}>
+                  entryHash: 0xd1a8cb47...9ca5 · Blocked by deadline / window expiry check &amp; IntentExpired
+                </div>
+              </div>
+            </li>
+            <li className="check-item hairline-row">
+              <div>
+                <span className="badge badge-danger">DENY #3</span>{" "}
+                <strong className="tabular">0x0000...dEaD → Target Allowlist &amp; 0x0A02 Firewall Refusal</strong>
+                <div className="muted mono" style={{ marginTop: 4 }}>
+                  entryHash: 0xe7fa57aa...09c5 · Denied by x/abstractaccount allowed_evm_calls &amp; RecipientNotQuantumSafe
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </section>
+
       {/* 2. Live Agent Intent Executor & Feed */}
       <section className="card" aria-labelledby="executor-heading">
         <div className="row-wrap" style={{ justifyContent: "space-between", marginBottom: 8 }}>

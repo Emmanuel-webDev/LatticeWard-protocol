@@ -10,6 +10,6 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["packages/**/*.ts", "scripts/**/*.ts"],
+  "include": ["src/**/*.ts", "packages/**/*.ts", "scripts/**/*.ts"],
   "exclude": ["packages/web"]
 }

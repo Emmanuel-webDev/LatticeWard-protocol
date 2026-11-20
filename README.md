@@ -8,20 +8,25 @@ Built for the QoreChain Developer Fest **"Build Before Q-Day"** (Post-Quantum AI
 
 ---
 
-## 1. Architecture & Dual-Plane Security Model
+## 1. Architecture & 3-Layer Post-Quantum Defense Model
 
-AI agents need hot `secp256k1` keys to sign payouts without human popups. Today a prompt injection or server breach can leak that key; on Q-Day, Shor's algorithm derives classical private keys directly from public keys on-chain. LatticeWard assumes **every classical key will be compromised** and splits authority into two planes:
+AI agents need hot `secp256k1` keys to sign payouts without human popups. Today a prompt injection or server breach can leak that key; on Q-Day, Shor's algorithm derives classical private keys directly from public keys on-chain. LatticeWard assumes **every classical key will be compromised** and enforces a **3-Layer Defense-in-Depth Architecture** across QoreChain's native Cosmos modules and EVM precompiles:
 
 ```mermaid
 flowchart TD
-    subgraph Plane1["Plane 1: Scoped Agent Execution (Classical secp256k1)"]
-        A["AI Agent / MCP Server"] -->|"Zod Intent Guard + simulateWithRiskScore"| B["executeScopedAgentIntent (nonReentrant)"]
-        B -->|"1. Check per-tx cap & rolling daily limit"| C["On-Chain Policy Guardrails"]
+    subgraph Layer1["Layer 1: Native x/abstractaccount Smart-Account Spending Rules"]
+        A0["Authenticated Agent Proposal (evmAuthSignBytesV2 + EIP-191)"] -->|"6-Check Policy Gate + Hash-Chained Verdict Ledger"| A1["x/abstractaccount MsgExecuteEVM"]
+        A1 -->|"denom_limits (0.1 QOR/tx, 0.3 QOR/day) + allowed_evm_calls + 24h expiry_unix"| A2["Scoped EVM Window (allowedTargets: [0x9697...aB29])"]
+    end
+
+    subgraph Plane1["Layer 2 (Plane 1): Scoped Agent Execution (LatticeWardVault)"]
+        A2 -->|"Zod Intent Guard + simulateWithRiskScore"| B["executeScopedAgentIntent (nonReentrant)"]
+        B -->|"1. Check per-tx cap, rolling daily limit, deadline & windowExpiresAt"| C["On-Chain Policy Guardrails"]
         C -->|"2. Staticcall 0x0A02 pqcKeyStatus(recipient)"| D["QoreChain 0x0A02 Precompile"]
         D -->|"registered == true"| E["Transfer Native QOR / ERC-20 fUSD"]
     end
 
-    subgraph Plane2["Plane 2: Sovereign Control (NIST FIPS 204 ML-DSA-87)"]
+    subgraph Plane2["Layer 3 (Plane 2): Sovereign Control (NIST FIPS 204 ML-DSA-87)"]
         F["Sovereign Lattice Key (4,627-byte sig)"] -->|"sovereignDigest(chainId, vault, policyNonce++, tag, params)"| G["configurePolicy / setAssetLimit / sovereignWithdraw / triggerQDayEmergencyClawback"]
         G -->|"Staticcall 0x0A01 pqcVerify(pk, sig, digest)"| H["QoreChain 0x0A01 Precompile"]
         H -->|"Verified == true"| I["Mutate Policy / Freeze / Rotate Agent / Sweep to 0x0A02 Rescue"]
@@ -32,10 +37,11 @@ flowchart TD
     end
 ```
 
-| Plane | Key | Allowed Actions | On-Chain Enforcement |
+| Layer / Plane | Key & Authority | Allowed Actions & Limits | On-Chain Enforcement |
 |---|---|---|---|
-| **Execution (Plane 1)** | Disposable `secp256k1` `agentKey` | Pay out inside a scoped window: per-asset `maxTxValue`, rolling `epochLimit` (daily limit), `windowExpiresAt`, asset allowlist (`assetLimits`), replay-protected intents (`usedIntents`), recipient must pass `QorePQC.isRegistered` / `IPQCKeyStatus(0x0000000000000000000000000000000000000A02).pqcKeyStatus` (`0x0A02`) | `LatticeWardVault.executeScopedAgentIntent` (`nonReentrant`) |
-| **Sovereign (Plane 2)** | `ML-DSA-87` (FIPS 204) | `configurePolicy`, `setAssetLimit`, `sovereignWithdraw`, `triggerQDayEmergencyClawback` (`emergencyClawback`), `rotateSovereignKey` | `QorePQC.verify` / `IPQCVerify(0x0000000000000000000000000000000000000A01).pqcVerify` (`0x0A01`) over `sovereignDigest` bound to `block.chainid` + `address(this)` + `policyNonce++` + `tag` + `keccak256(params)` |
+| **Layer 1: Native `x/abstractaccount` & Scoped EVM Window** | Linked `secp256k1` authenticator (`0xc403...DE04`) under hybrid `eth_secp256k1 + ML-DSA-87` owner authority | Per-tx cap (`100,000 uqor` / `0.1 QOR`), daily cap (`300,000 uqor` / `0.3 QOR`), `denom_limits`, 24h `expiry_unix`, deny-by-default `allowed_evm_calls: [0x9697...aB29]`, authenticated `evmAuthSignBytesV2` + `MsgOpenEVMWindow` | QoreChain `x/abstractaccount` (`MsgUpdateSpendingRules`, `MsgRegisterAuthenticator`, `MsgExecuteEVM`, `MsgRevokeAuthenticator`) + `x/pqc` (`MsgOpenEVMWindow`) |
+| **Layer 2 (Plane 1): `LatticeWardVault` Execution** | Disposable `secp256k1` `agentKey` | Pay out inside a scoped window: per-asset `maxTxValue`, rolling `epochLimit` (daily limit), `windowExpiresAt`, per-intent `deadline`, asset allowlist (`assetLimits`), replay-protected intents (`usedIntents`), recipient must pass `QorePQC.isRegistered` / `IPQCKeyStatus(0x0000000000000000000000000000000000000a02).pqcKeyStatus` (`0x0A02`) | `LatticeWardVault.executeScopedAgentIntent` (`nonReentrant`) |
+| **Layer 3 (Plane 2): `LatticeWardVault` Sovereign Control** | `ML-DSA-87` (FIPS 204) | `configurePolicy`, `setAssetLimit`, `sovereignWithdraw`, `triggerQDayEmergencyClawback` (`emergencyClawback`), `rotateSovereignKey` | `QorePQC.verify` / `IPQCVerify(0x0000000000000000000000000000000000000a01).pqcVerify` (`0x0A01`) over `sovereignDigest` bound to `block.chainid` + `address(this)` + `policyNonce++` + `tag` + `keccak256(params)` |
 
 The vault has **no `ecrecover` and no `onlyOwner`**. `msg.sender` carries zero administrative authority, so a leaked classical key cannot escalate privileges, alter limits, or drain the treasury.
 
@@ -47,11 +53,12 @@ The vault has **no `ecrecover` and no `onlyOwner`**. `msg.sender` carries zero a
 contracts/            LatticeWardVault.sol, VaultFactory.sol, libraries/QorePQC.sol, interfaces/IQorePrecompiles.sol
 contracts/test/       LatticeWard.t.sol, LatticeWardVault.t.sol, LatticeWardVault.invariant.t.sol, VaultFactory.t.sol
 script/               Deploy.s.sol, DeployFactory.s.sol
+src/                  abstractAccount.ts (x/abstractaccount spending rules & MsgExecuteEVM), authenticatedAgent.ts (EIP-191 signed intent proposals & hash-chained verdict ledger)
 packages/agent-mcp/   abi.ts, config.ts, schema.ts (Zod), pqc.ts, precompiles.ts, preflight.ts, agent.ts, drill.ts, sovereign.ts, mcp-server.ts
-packages/web/         Vite + React + TypeScript frontend (0x0A02 Quantum Status Gate, Live Telemetry, Guardrail Configurator, Agent Executor, Kill-Switch)
+packages/web/         Vite + React + TypeScript frontend (0x0A02 Quantum Status Gate, Live Telemetry, Layer 1 x/abstractaccount & Verdict Ledger, Guardrail Configurator, Agent Executor, Kill-Switch)
 packages/relayer/     Stateless serverless relayer + CORS evm-window proxy (Vercel)
-scripts/              probe-precompiles.ts, check-window.ts, convert-fusd.ts, fund-vault.ts, gen-sovereign-key.ts, sovereign-cli.ts, verify-qday.ts
-audits/               qorescan_stage1.json (@qorechain/qorescan static analysis report)
+scripts/              setup-abstract-account.ts, verify-defense.ts, probe-precompiles.ts, check-window.ts, convert-fusd.ts, fund-vault.ts, gen-sovereign-key.ts, sovereign-cli.ts, verify-qday.ts
+audits/               onchain-proof.json, verdict-ledger.jsonl, qorescan_stage1.json (@qorechain/qorescan static analysis report)
 docs:                 THREAT_MODEL.md, AI_USAGE.md, SUBMISSION_COPY.md, DRILL_RUNBOOK.md, USABILITY_TEST.md, LICENSE
 ```
 
@@ -72,6 +79,8 @@ npm run build
 
 # 3. Live Testnet Precompile Probe & Q-Day Breach Drill (qorechain-diana, Chain ID 9800)
 cp .env.example .env              # populate testnet RPC & keys
+npm run setup:aa                  # register x/abstractaccount spending rules, link authenticator & open scoped EVM window
+npm run verify:defense            # execute 3-layer defense verification (writes audits/onchain-proof.json & audits/verdict-ledger.jsonl)
 npm run probe                     # verify live 0x0A01 & 0x0A02 precompile ABIs
 npm run check:windows             # inspect PQC registration & EVM window status
 npm run verify:qday               # run 8-scenario live Q-Day breach drill
@@ -116,6 +125,20 @@ cd packages/web && npm run dev    # http://127.0.0.1:5173
 | **5** | Replay of an executed intent | `revert IntentAlreadyUsed` | `staticCall verified (revert IntentAlreadyUsed)` |
 | **6a** | ML-DSA-87 emergency clawback (`triggerQDayEmergencyClawback`): revoke compromised key + freeze | `frozen=true rotated=true oldKeyBlocked=true` | [`0x16dac299...b5edf9e0`](https://explore.qore.network/tx/0x16dac29907d06ffbd1567392e0ab9c98e1d4f6661afa537a0470ed56b5edf9e0) |
 | **6b** | ML-DSA-87 recovery: unfreeze + restore agent | `frozen=false` | [`0x8c53a3db...b74ea7da`](https://explore.qore.network/tx/0x8c53a3db12e00cc51ed291e188c64b0f2b00d1a5f772bee757caa32fb74ea7da) |
+
+### Live `x/abstractaccount` Smart-Account Spending Rules & Defense Proof (`npm run verify:defense`, `allPassed: true`)
+
+Full verbatim receipts and hash-chained policy verdicts are committed in [`audits/onchain-proof.json`](./audits/onchain-proof.json) and [`audits/verdict-ledger.jsonl`](./audits/verdict-ledger.jsonl):
+
+| Step / Test | Protocol Action | On-Chain Result | Block / Cosmos Tx Hash |
+|---|---|---|---|
+| **Setup (`DEPLOYER`)** | `MsgUpdateSpendingRules` (`denom_limits: 100,000 uqor/tx, 300,000 uqor/day`, `allowed_evm_calls: [0x9697...aB29]`) + `MsgRegisterAuthenticator` (`secp256k1`, 24h `expiry_unix`) + `MsgOpenEVMWindow` | `code: 0` | Block `10416953` · [`499C80BD...A365`](https://explore.qore.network/tx/499C80BD15C0A0DCEE2721BD606CE803C90890BB9367767D30F5B93A4D22A365) |
+| **Setup (`DRILL_ACCOUNT`)** | `MsgUpdateSpendingRules` + `MsgOpenEVMWindow` on `qor166y3unhk00s8kh0fwq7ucn8ndm6dzk4w0gq3kx` | `code: 0` | Block `10416963` · [`2C9A0661...EE92`](https://explore.qore.network/tx/2C9A0661A4CE89EF9EF40C7C112660B6B4774EC5E60BEA33F03AEDBE8FCC9E92) |
+| **Test 1 (In-Policy)** | Authenticated agent proposal (`evmAuthSignBytesV2` + EIP-191) -> `MsgExecuteEVM` -> `LatticeWardVault.executeScopedAgentIntent` (`0.001 QOR`) | `ALLOW` (`entryHash: 0x3f3d6c42...1260a`) | Block `10416970` · [`88466A57...FB29`](https://explore.qore.network/tx/88466A5774F01900165F26A4221671498B59231343D85853829BF1698532FB29) |
+| **Test 2a (Value Cap Refusal)** | Over-spend proposal (`1.0 QOR > 0.1 QOR` per-tx cap) | `DENY` (`entryHash: 0x16f77887...3bdc`) + `ExceedsScopedMaxTxValue` | Blocked fail-closed & reverted on-chain |
+| **Test 2b (Duration Refusal)** | Expired intent deadline / window | `DENY` (`entryHash: 0xd1a8cb47...9ca5`) + `IntentExpired` | Blocked fail-closed & reverted on-chain |
+| **Test 2c (Target & `0x0A02` Refusal)** | Unallowlisted target & non-PQC recipient (`0x0000...dEaD`) | `DENY` (`entryHash: 0xe7fa57aa...09c5`) + `RecipientNotQuantumSafe` | Block `10416984` · [`CAEBBCFD...3536`](https://explore.qore.network/tx/CAEBBCFD7E7C6CF7A2F07359D09C9F212C846EA4A0E4699DBE25C30645B83536) |
+| **Test 3 (Revoke & Restore)** | Owner revokes authenticator (`MsgRevokeAuthenticator`), proves post-revocation `MsgExecuteEVM` fails (`linked key is unbound or revoked`), and restores active state | `PASS` | Revoke: [`F9AAA418...1B19`](https://explore.qore.network/tx/F9AAA41814CFCB3840DD34D21ECA38DE441A5C353ABE14A4511011DEE2521B19) · Blocked Tx: `DCD3B2B8...CC28` · Restore: [`C58F640A...99B0`](https://explore.qore.network/tx/C58F640A324A10D889D5E75FA04F8605F5D71907B120CD29C3E135BCC6C899B0) |
 
 ---
 

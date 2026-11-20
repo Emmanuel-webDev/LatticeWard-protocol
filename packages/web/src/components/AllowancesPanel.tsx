@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
 import { AbiCoder, Interface, formatEther, formatUnits, parseEther, parseUnits } from "ethers";
 import { FUSD_ADDRESS, VAULT_ABI, ZERO_ADDRESS, explorerTxUrl } from "../lib/constants";
-import { type VaultSnapshot, signSovereignCall, submitViaRelayerOrMetaMask } from "../lib/chain";
+import { type VaultSnapshot, signSovereignCall, submitViaRelayerOrQoreX } from "../lib/chain";
 import type { BrowserKeySigner } from "../lib/signer";
-import { mapChainError, type MetaMaskConnection } from "../lib/wallets";
+import { mapChainError, type QoreXConnection } from "../lib/wallets";
 
 interface Props {
   vault: VaultSnapshot | null;
-  metamask: MetaMaskConnection | null;
+  qorex: QoreXConnection | null;
   unlockedSigner: BrowserKeySigner | null;
   relayerUrl: string;
   onRefresh: () => void;
 }
 
-export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, onRefresh }: Props) {
+export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRefresh }: Props) {
   const [preset, setPreset] = useState<"cautious" | "standard" | "custom">("custom");
   const [qorEnabled, setQorEnabled] = useState(true);
   const [qorMaxTx, setQorMaxTx] = useState("0.1");
@@ -95,11 +95,11 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
       const { pk, sig } = await signSovereignCall(vault.address, "TAG_ASSET", encoded, unlockedSigner);
       const iface = new Interface(VAULT_ABI);
       const calldata = iface.encodeFunctionData("setAssetLimit", [u, pk, sig]);
-      const res = await submitViaRelayerOrMetaMask({
+      const res = await submitViaRelayerOrQoreX({
         relayerUrl,
         vaultAddress: vault.address,
         calldata,
-        metaMaskProvider: metamask?.provider ?? null,
+        qorexEvmProvider: qorex?.evmProvider ?? null,
       });
       setTxHash(res.txHash);
       onRefresh();
@@ -135,11 +135,11 @@ export function AllowancesPanel({ vault, metamask, unlockedSigner, relayerUrl, o
       const { pk, sig } = await signSovereignCall(vault.address, "TAG_CONFIGURE", encoded, unlockedSigner);
       const iface = new Interface(VAULT_ABI);
       const calldata = iface.encodeFunctionData("configurePolicy", [policy, pk, sig]);
-      const res = await submitViaRelayerOrMetaMask({
+      const res = await submitViaRelayerOrQoreX({
         relayerUrl,
         vaultAddress: vault.address,
         calldata,
-        metaMaskProvider: metamask?.provider ?? null,
+        qorexEvmProvider: qorex?.evmProvider ?? null,
       });
       setTxHash(res.txHash);
       onRefresh();

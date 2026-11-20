@@ -17,9 +17,7 @@ import {
   loadBackupFromIndexedDb,
 } from "./lib/signer";
 import {
-  type MetaMaskConnection,
   type QoreXConnection,
-  connectMetaMask,
   connectQoreX,
   evmToQor,
   mapChainError,
@@ -57,7 +55,6 @@ export function App() {
   });
 
   const [qorex, setQorex] = useState<QoreXConnection | null>(null);
-  const [metamask, setMetamask] = useState<MetaMaskConnection | null>(null);
   const [pqcStatus, setPqcStatus] = useState<PqcStatus | null>(null);
   const [evmWindow, setEvmWindow] = useState<EvmWindowStatus | null>(null);
 
@@ -76,7 +73,7 @@ export function App() {
   const [walletErr, setWalletErr] = useState<string | null>(null);
   const [walletInfo, setWalletInfo] = useState<string | null>(null);
 
-  const activeAddress = metamask?.address || qorex?.evmAddress || "";
+  const activeAddress = qorex?.evmAddress || "";
   const activeQorAddress = qorex?.bech32Address || (activeAddress ? evmToQor(activeAddress) : "");
 
   const toggleTheme = () => {
@@ -133,18 +130,6 @@ export function App() {
       const conn = await connectQoreX();
       setQorex(conn);
       setWalletInfo(`QoreX connected: ${conn.bech32Address} (${conn.evmAddress})`);
-    } catch (e) {
-      setWalletErr(mapChainError(e));
-    }
-  };
-
-  const handleConnectMetaMask = async () => {
-    setWalletErr(null);
-    setWalletInfo(null);
-    try {
-      const conn = await connectMetaMask();
-      setMetamask(conn);
-      setWalletInfo(`MetaMask connected on QoreChain Diana (9800): ${conn.address}`);
     } catch (e) {
       setWalletErr(mapChainError(e));
     }
@@ -231,11 +216,8 @@ export function App() {
             >
               {theme === "dark" ? "☀ Light" : "☾ Dark"}
             </button>
-            <button type="button" className="btn" onClick={() => void handleConnectQoreX()}>
+            <button type="button" className="btn btn-primary" onClick={() => void handleConnectQoreX()}>
               {qorex?.connected ? `QoreX: ${qorex.bech32Address.slice(0, 9)}...` : "Connect QoreX"}
-            </button>
-            <button type="button" className="btn btn-primary" onClick={() => void handleConnectMetaMask()}>
-              {metamask?.connected ? `MetaMask: ${metamask.address.slice(0, 7)}...` : "Connect MetaMask"}
             </button>
           </div>
         </div>
@@ -352,13 +334,11 @@ export function App() {
               {tab === "setup" && (
                 <SetupChecklist
                   qorex={qorex}
-                  metamask={metamask}
                   pqcStatus={pqcStatus}
                   evmWindow={evmWindow}
                   hasVault={userVaults.length > 0}
                   vault={vaultSnapshot}
                   onConnectQoreX={() => void handleConnectQoreX()}
-                  onConnectMetaMask={() => void handleConnectMetaMask()}
                   onOpenWindowInQoreX={() => void handleOpenWindowInQoreX()}
                   onGoTab={(t) => setTab(t === "deposit" ? "dashboard" : t)}
                 />
@@ -366,7 +346,7 @@ export function App() {
 
               {tab === "create" && (
                 <CreateVaultPanel
-                  metamask={metamask}
+                  qorex={qorex}
                   unlockedSigner={unlockedSigner}
                   backupConfirmed={backupConfirmed}
                   onVaultCreated={(addr) => {
@@ -380,7 +360,7 @@ export function App() {
               {tab === "dashboard" && (
                 <DashboardPanel
                   vault={vaultSnapshot}
-                  metamask={metamask}
+                  qorex={qorex}
                   userFusdBalance={userFusd}
                   onRefresh={() => void refreshChainState()}
                   onGoEmergency={() => setTab("emergency")}
@@ -390,7 +370,7 @@ export function App() {
               {tab === "allowances" && (
                 <AllowancesPanel
                   vault={vaultSnapshot}
-                  metamask={metamask}
+                  qorex={qorex}
                   unlockedSigner={unlockedSigner}
                   relayerUrl={relayerUrl}
                   onRefresh={() => void refreshChainState()}
@@ -400,7 +380,7 @@ export function App() {
               {tab === "emergency" && (
                 <EmergencyPanel
                   vault={vaultSnapshot}
-                  metamask={metamask}
+                  qorex={qorex}
                   unlockedSigner={unlockedSigner}
                   evmWindow={evmWindow}
                   relayerUrl={relayerUrl}

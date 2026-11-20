@@ -21,11 +21,11 @@ import {
   explorerTxUrl,
 } from "../lib/constants";
 import { getReadProvider, type VaultSnapshot } from "../lib/chain";
-import { evmToQor, mapChainError, type MetaMaskConnection } from "../lib/wallets";
+import { evmToQor, mapChainError, type QoreXConnection } from "../lib/wallets";
 
 interface Props {
   vault: VaultSnapshot | null;
-  metamask: MetaMaskConnection | null;
+  qorex: QoreXConnection | null;
   userFusdBalance: bigint;
   onRefresh: () => void;
   onGoEmergency: () => void;
@@ -43,7 +43,7 @@ interface FeedItem {
 
 export function DashboardPanel({
   vault,
-  metamask,
+  qorex,
   userFusdBalance,
   onRefresh,
   onGoEmergency,
@@ -87,13 +87,13 @@ export function DashboardPanel({
     e.preventDefault();
     setErr(null);
     setMsg(null);
-    if (!metamask?.provider) {
-      setErr("Connect MetaMask first so we can send your QOR deposit.");
+    if (!qorex?.evmProvider) {
+      setErr("Connect QoreX first so we can send your QOR deposit.");
       return;
     }
     setBusy("deposit-qor");
     try {
-      const signer = await metamask.provider.getSigner();
+      const signer = await qorex.evmProvider.getSigner();
       const tx = await signer.sendTransaction({ to: vault.address, value: parseEther(depositQor) });
       await tx.wait();
       setMsg(`Deposited ${depositQor} QOR into vault.`);
@@ -109,13 +109,13 @@ export function DashboardPanel({
     e.preventDefault();
     setErr(null);
     setMsg(null);
-    if (!metamask?.provider) {
-      setErr("Connect MetaMask first so we can send your fUSD deposit.");
+    if (!qorex?.evmProvider) {
+      setErr("Connect QoreX first so we can send your fUSD deposit.");
       return;
     }
     setBusy("deposit-fusd");
     try {
-      const signer = await metamask.provider.getSigner();
+      const signer = await qorex.evmProvider.getSigner();
       const fusd = new Contract(FUSD_ADDRESS, ERC20_ABI, signer);
       const tx = await fusd.transfer(vault.address, parseUnits(depositFusd, vault.fusdDecimals));
       await tx.wait();
@@ -207,14 +207,14 @@ export function DashboardPanel({
   const handleExecuteIntentOnChain = async () => {
     setErr(null);
     setMsg(null);
-    if (!metamask?.provider) {
-      setErr("Connect MetaMask (using the vault's active agentKey) to broadcast an on-chain agent payout.");
+    if (!qorex?.evmProvider) {
+      setErr("Connect QoreX (using the vault's active agentKey) to broadcast an on-chain agent payout.");
       return;
     }
     setBusy("exec-intent");
     try {
       const env = buildIntentTuple();
-      const signer = await metamask.provider.getSigner();
+      const signer = await qorex.evmProvider.getSigner();
       const contract = new Contract(vault.address, VAULT_ABI, signer);
       const tx = await contract.executeScopedAgentIntent(env);
       await tx.wait();
@@ -626,9 +626,9 @@ export function DashboardPanel({
             type="button"
             className="btn"
             onClick={() => void handleExecuteIntentOnChain()}
-            disabled={busy !== null || !metamask?.connected}
+            disabled={busy !== null || !qorex?.evmProvider}
           >
-            {busy === "exec-intent" ? "Broadcasting..." : "Execute On-Chain via MetaMask"}
+            {busy === "exec-intent" ? "Broadcasting..." : "Execute On-Chain via QoreX"}
           </button>
         </div>
 
@@ -678,7 +678,7 @@ export function DashboardPanel({
                 onChange={(e) => setDepositQor(e.target.value)}
               />
             </div>
-            <button type="submit" className="btn btn-primary" disabled={busy !== null || !metamask?.connected}>
+            <button type="submit" className="btn btn-primary" disabled={busy !== null || !qorex?.evmProvider}>
               {busy === "deposit-qor" ? "Sending..." : "Deposit QOR"}
             </button>
           </form>
@@ -698,13 +698,13 @@ export function DashboardPanel({
                   onChange={(e) => setDepositFusd(e.target.value)}
                 />
               </div>
-              <button type="submit" className="btn btn-primary" disabled={busy !== null || !metamask?.connected}>
+              <button type="submit" className="btn btn-primary" disabled={busy !== null || !qorex?.evmProvider}>
                 {busy === "deposit-fusd" ? "Sending..." : "Deposit fUSD"}
               </button>
             </form>
           ) : (
             <div className="alert alert-caution" style={{ margin: 0 }}>
-              <strong>0 ERC-20 fUSD in MetaMask.</strong> Faucet fUSD starts as a Cosmos bank coin (
+              <strong>0 ERC-20 fUSD in QoreX EVM.</strong> Faucet fUSD starts as a Cosmos bank coin (
               <span className="mono">{FUSD_BANK_DENOM}</span>). Convert it to ERC-20 fUSD via QoreX or{" "}
               <code>npm run convert:fusd</code> before depositing.
             </div>

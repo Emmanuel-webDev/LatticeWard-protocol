@@ -6,14 +6,14 @@ import {
   type VaultSnapshot,
   checkPqcKeyStatus,
   signSovereignCall,
-  submitViaRelayerOrMetaMask,
+  submitViaRelayerOrQoreX,
 } from "../lib/chain";
 import type { BrowserKeySigner } from "../lib/signer";
-import { mapChainError, type MetaMaskConnection } from "../lib/wallets";
+import { mapChainError, type QoreXConnection } from "../lib/wallets";
 
 interface Props {
   vault: VaultSnapshot | null;
-  metamask: MetaMaskConnection | null;
+  qorex: QoreXConnection | null;
   unlockedSigner: BrowserKeySigner | null;
   evmWindow: EvmWindowStatus | null;
   relayerUrl: string;
@@ -22,7 +22,7 @@ interface Props {
 
 export function EmergencyPanel({
   vault,
-  metamask,
+  qorex,
   unlockedSigner,
   evmWindow,
   relayerUrl,
@@ -31,7 +31,7 @@ export function EmergencyPanel({
   const [newAgent, setNewAgent] = useState(() => Wallet.createRandom().address);
   const [rescueAddress, setRescueAddress] = useState("0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae");
   const [sweepAssets, setSweepAssets] = useState(true);
-  const [withdrawTo, setWithdrawTo] = useState(metamask?.address || "");
+  const [withdrawTo, setWithdrawTo] = useState(qorex?.evmAddress || "");
   const [withdrawAmt, setWithdrawAmt] = useState("0.1");
   const [withdrawAsset, setWithdrawAsset] = useState<"QOR" | "fUSD">("QOR");
   const [busy, setBusy] = useState<string | null>(null);
@@ -76,11 +76,11 @@ export function EmergencyPanel({
       const { pk, sig } = await signSovereignCall(vault.address, "TAG_CONFIGURE", encoded, unlockedSigner);
       const iface = new Interface(VAULT_ABI);
       const calldata = iface.encodeFunctionData("configurePolicy", [policy, pk, sig]);
-      const res = await submitViaRelayerOrMetaMask({
+      const res = await submitViaRelayerOrQoreX({
         relayerUrl,
         vaultAddress: vault.address,
         calldata,
-        metaMaskProvider: metamask?.provider ?? null,
+        qorexEvmProvider: qorex?.evmProvider ?? null,
       });
       setTxHash(res.txHash);
       onRefresh();
@@ -131,11 +131,11 @@ export function EmergencyPanel({
       const { pk, sig } = await signSovereignCall(vault.address, "TAG_CLAWBACK", encoded, unlockedSigner);
       const iface = new Interface(VAULT_ABI);
       const calldata = iface.encodeFunctionData("triggerQDayEmergencyClawback", [clawback, pk, sig]);
-      const res = await submitViaRelayerOrMetaMask({
+      const res = await submitViaRelayerOrQoreX({
         relayerUrl,
         vaultAddress: vault.address,
         calldata,
-        metaMaskProvider: metamask?.provider ?? null,
+        qorexEvmProvider: qorex?.evmProvider ?? null,
       });
       setTxHash(res.txHash);
       setConfirmClawbackOpen(false);
@@ -191,11 +191,11 @@ export function EmergencyPanel({
       const { pk, sig } = await signSovereignCall(vault.address, "TAG_WITHDRAW", encoded, unlockedSigner);
       const iface = new Interface(VAULT_ABI);
       const calldata = iface.encodeFunctionData("sovereignWithdraw", [w, pk, sig]);
-      const res = await submitViaRelayerOrMetaMask({
+      const res = await submitViaRelayerOrQoreX({
         relayerUrl,
         vaultAddress: vault.address,
         calldata,
-        metaMaskProvider: metamask?.provider ?? null,
+        qorexEvmProvider: qorex?.evmProvider ?? null,
       });
       setTxHash(res.txHash);
       setConfirmWithdrawOpen(false);

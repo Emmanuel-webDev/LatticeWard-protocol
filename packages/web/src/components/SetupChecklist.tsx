@@ -1,32 +1,28 @@
 import type { EvmWindowStatus, PqcStatus, VaultSnapshot } from "../lib/chain";
-import type { MetaMaskConnection, QoreXConnection } from "../lib/wallets";
+import type { QoreXConnection } from "../lib/wallets";
 
 interface Props {
   qorex: QoreXConnection | null;
-  metamask: MetaMaskConnection | null;
   pqcStatus: PqcStatus | null;
   evmWindow: EvmWindowStatus | null;
   hasVault: boolean;
   vault: VaultSnapshot | null;
   onConnectQoreX: () => void;
-  onConnectMetaMask: () => void;
   onOpenWindowInQoreX: () => void;
   onGoTab: (tab: "create" | "deposit" | "allowances") => void;
 }
 
 export function SetupChecklist({
   qorex,
-  metamask,
   pqcStatus,
   evmWindow,
   hasVault,
   vault,
   onConnectQoreX,
-  onConnectMetaMask,
   onOpenWindowInQoreX,
   onGoTab,
 }: Props) {
-  const walletConnected = Boolean(metamask?.connected || qorex?.connected);
+  const walletConnected = Boolean(qorex?.connected);
   const keyRegistered = Boolean(pqcStatus?.registered);
   const windowOpen = evmWindow?.status === "open";
   const hasDeposit = Boolean(vault && (vault.qorBalance > 0n || vault.fusdBalance > 0n));
@@ -35,12 +31,12 @@ export function SetupChecklist({
   const steps = [
     {
       id: "connect",
-      done: walletConnected && Boolean(metamask?.connected),
-      title: "1. Connect QoreX & MetaMask",
-      why: "QoreX manages your post-quantum identity and EVM window; MetaMask sends EVM transactions on chain 9800.",
-      actionLabel: !qorex?.connected ? "Connect QoreX" : !metamask?.connected ? "Connect MetaMask" : "Connected",
-      onAction: !qorex?.connected ? onConnectQoreX : onConnectMetaMask,
-      disabled: Boolean(qorex?.connected && metamask?.connected),
+      done: walletConnected,
+      title: "1. Connect QoreX Wallet",
+      why: "QoreX manages your post-quantum identity, scoped EVM window, and EVM transactions on QoreChain Diana (Chain ID 9800).",
+      actionLabel: walletConnected ? "Connected" : "Connect QoreX",
+      onAction: onConnectQoreX,
+      disabled: walletConnected,
     },
     {
       id: "key",
@@ -55,7 +51,7 @@ export function SetupChecklist({
       id: "window",
       done: windowOpen,
       title: "3. EVM authorization window open",
-      why: "Your EVM window bounds how many blocks, transactions, and uqor MetaMask can spend (~6h max).",
+      why: "Your EVM window bounds how many blocks, transactions, and uqor QoreX can spend (~6h max).",
       actionLabel: windowOpen ? "Window Open" : "Open Window in QoreX",
       onAction: onOpenWindowInQoreX,
       disabled: windowOpen || !qorex?.canSignAndBroadcast,

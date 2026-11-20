@@ -2,17 +2,17 @@ import { useState } from "react";
 import { Contract, Wallet, isAddress, parseEther, parseUnits } from "ethers";
 import { FACTORY_ABI, FACTORY_ADDRESS, FUSD_ADDRESS, ZERO_ADDRESS, explorerTxUrl } from "../lib/constants";
 import type { BrowserKeySigner } from "../lib/signer";
-import { mapChainError, type MetaMaskConnection } from "../lib/wallets";
+import { mapChainError, type QoreXConnection } from "../lib/wallets";
 
 interface Props {
-  metamask: MetaMaskConnection | null;
+  qorex: QoreXConnection | null;
   unlockedSigner: BrowserKeySigner | null;
   backupConfirmed: boolean;
   onVaultCreated: (vaultAddress: string) => void;
 }
 
-export function CreateVaultPanel({ metamask, unlockedSigner, backupConfirmed, onVaultCreated }: Props) {
-  const [agentAddr, setAgentAddr] = useState(metamask?.address || "");
+export function CreateVaultPanel({ qorex, unlockedSigner, backupConfirmed, onVaultCreated }: Props) {
+  const [agentAddr, setAgentAddr] = useState(qorex?.evmAddress || "");
   const [qorMaxTx, setQorMaxTx] = useState("1");
   const [qorDaily, setQorDaily] = useState("3");
   const [fusdMaxTx, setFusdMaxTx] = useState("10");
@@ -33,8 +33,8 @@ export function CreateVaultPanel({ metamask, unlockedSigner, backupConfirmed, on
     setErr(null);
     setTxHash(null);
 
-    if (!metamask?.connected || !metamask.provider) {
-      setErr("Connect MetaMask first to deploy your vault.");
+    if (!qorex?.connected || !qorex.evmProvider) {
+      setErr("Connect QoreX (with EVM access) first to deploy your vault.");
       return;
     }
     if (!unlockedSigner) {
@@ -52,7 +52,7 @@ export function CreateVaultPanel({ metamask, unlockedSigner, backupConfirmed, on
 
     setBusy(true);
     try {
-      const signer = await metamask.provider.getSigner();
+      const signer = await qorex.evmProvider.getSigner();
       const factory = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       const keyHash = await unlockedSigner.keyHash();
       const now = Math.floor(Date.now() / 1000);
@@ -98,7 +98,7 @@ export function CreateVaultPanel({ metamask, unlockedSigner, backupConfirmed, on
         }
       }
       if (!createdVault) {
-        const list = (await factory.vaultsOf(metamask.address)) as string[];
+        const list = (await factory.vaultsOf(qorex.evmAddress)) as string[];
         createdVault = list[list.length - 1] ?? "";
       }
       if (createdVault) {
@@ -204,7 +204,7 @@ export function CreateVaultPanel({ metamask, unlockedSigner, backupConfirmed, on
         <button
           type="submit"
           className="btn btn-primary"
-          disabled={busy || !metamask?.connected || !unlockedSigner || !backupConfirmed}
+          disabled={busy || !qorex?.evmProvider || !unlockedSigner || !backupConfirmed}
         >
           {busy ? "Deploying Vault..." : "Deploy Isolated Vault"}
         </button>

@@ -715,5 +715,29 @@
       "restoreTxHash": "C5482CDF1F73675F30A683B738C111C105FD6F3856B812E4C529C31A8E349329",
       "restoreBlock": 10418282
     }
-  ]
+  ],
+  "agentPaysApiVerification": {
+    "vaultAddress": "0x9697a96058555b3A0C50b2338440C84B927caB29",
+    "registeredPayee0x0A02": "0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae",
+    "policyConfigPath": "config/payee-policy.json",
+    "defaultPreflightMode": "required",
+    "onChainResults": {
+      "liveInPolicyVaultSettlementTx": "0xf176d24256d812af43b035a4eb4655156a3aadddcbd7f0332a9e170d8e69bfcc",
+      "liveAuthenticatedMsgExecuteEvmTx": "D3AB9E1E52052BF0AB2D5A559A2EC9AB40D3563F05B5A8B867404D79D6D17E7A",
+      "liveNonPqcRecipientRevertTx": "0xaee3adacd0ae5f5e530cb39552f3a820ef397318ae6af040585e546959e8bf33",
+      "paidApi402FlowTestedLocally": true,
+      "paidApiLiveBroadcastNote": "402 -> invoice binding (intentId=keccak256(invoiceId)) -> 200 -> 409 replay rejection verified via npm run test:agent-pays (7/7 PASS); live broadcast ready via npm run api:paid + npm run agent:buy when agent EVM window is open."
+    },
+    "offChainGateDenials": [
+      {
+        "ledgerIndex": 8,
+        "enforcementLayer": "off-chain gate",
+        "invoiceId": "prompt-inject-1795195610664",
+        "recipient": "0x000000000000000000000000000000000000dEaD",
+        "verdict": "DENY",
+        "reason": "Off-chain gate denied: recipient 0x000000000000000000000000000000000000dEaD is not in payee allowlist (config/payee-policy.json)",
+        "entryHash": "0xf14c4c44b6081f50b49c27efbecb7c4c2cd9d14432862d87545c96c123af89eb"
+      }
+    ]
+  }
 }

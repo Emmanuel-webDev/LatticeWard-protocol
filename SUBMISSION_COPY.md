@@ -4,40 +4,31 @@ Ready-to-paste copy aligned with the **Post-Quantum AI Agents** category bounty 
 
 ---
 
-## 1. Project Description (Paste into the "Description" field)
+## 1. Project Description (Paste into the "Description" field — ~2,350 chars, fits comfortably under the form limit)
 
 ```text
 THE PROBLEM: HOT AI AGENT KEYS MEET Q-DAY
 
-Autonomous AI agents that execute treasury operations (vendor payouts, recurring settlements, DeFi automation) need a hot classical secp256k1 key to sign transactions without a human popup. Today, a prompt injection or server breach can leak that hot key. On Q-Day, Shor's algorithm will derive classical private keys directly from on-chain public keys. Any smart account or treasury vault that relies on ecrecover (0x01) or onlyOwner for administrative control loses everything when a classical key is compromised.
+Autonomous AI agents executing treasury payouts need a hot classical secp256k1 key to sign without human popups. Today, a prompt injection or server breach can leak that hot key; on Q-Day, Shor's algorithm derives classical private keys directly from on-chain public keys. Any smart account or vault relying on ecrecover (0x01) or onlyOwner loses everything when a classical key is compromised.
 
 THE SOLUTION: LATTICEWARD (3-LAYER POST-QUANTUM AGENT DEFENSE)
 
-LatticeWard is a post-quantum spend-governance vault and AI agent security engine deployed on QoreChain Diana Testnet (Chain ID 9800, Vault: 0x9697a96058555b3A0C50b2338440C84B927caB29, Factory: 0xAEdE5a3B09c9BDC749297C39826C6DDdaF311C5c). It assumes every classical key will eventually leak and enforces a 3-layer defense-in-depth architecture across QoreChain's native Cosmos modules and EVM precompiles:
+LatticeWard is a post-quantum spend-governance vault and AI agent security engine live on QoreChain Diana Testnet (Chain ID 9800, Vault: 0x9697a96058555b3A0C50b2338440C84B927caB29, Factory: 0xAEdE5a3B09c9BDC749297C39826C6DDdaF311C5c). It assumes every classical key will leak and enforces 3 defense layers:
 
 1. Layer 1 — Protocol-Level Smart-Account Spending Rules (Native x/abstractaccount & Scoped EVM Window):
-   Under hybrid secp256k1 + ML-DSA-87 owner authority, QoreChain's native x/abstractaccount module registers on-chain spending rules (MsgUpdateSpendingRules) and links the agent's disposable key as a scoped authenticator (MsgRegisterAuthenticator with EIP-191 possession proof):
-   - Per-Transaction & Daily Denom Limits: denom_limits capping native uqor at 100,000 uqor (0.1 QOR) per tx and 300,000 uqor (0.3 QOR) per day, plus native bank-coin fUSD (erc20:0x97143B771D34ddb9130b807b135Ae675A5a963CA) at 1,000,000 (1.0 fUSD) per tx and 3,000,000 (3.0 fUSD) per day (while EVM ERC-20 fUSD payouts from the vault are bounded by LatticeWardVault.assetLimits in Layer 2).
-   - Deny-by-Default Target Allowlist & Scoped EVM Window: allowed_evm_calls and MsgOpenEVMWindow allowedTargets restricted strictly to 0x9697a96058555b3A0C50b2338440C84B927caB29.
-   - Authenticator Duration Expiry & Revocation: 30-day expiry_unix (covering the full judging window) plus instant owner revocation via MsgRevokeAuthenticator.
-   - Authenticated Agent Proposals & Hash-Chained Verdict Ledger: Every agent intent is signed over evmAuthSignBytesV2 (EIP-191), evaluated across 6 fail-closed policy checks, logged in a hash-chained JSONL verdict ledger (audits/verdict-ledger.jsonl), and executed via MsgExecuteEVM.
+   Under hybrid secp256k1 + ML-DSA-87 owner authority, x/abstractaccount enforces denom_limits for native uqor (0.1 QOR/tx, 0.3 QOR/day) and bank fUSD (1.0 fUSD/tx, 3.0 fUSD/day), a deny-by-default target allowlist (allowed_evm_calls & MsgOpenEVMWindow allowedTargets restricted to 0x9697...aB29), a 30-day authenticator TTL with instant MsgRevokeAuthenticator kill-switch, and EIP-191 evmAuthSignBytesV2 authenticated proposals logged in a hash-chained JSONL verdict ledger (audits/verdict-ledger.jsonl).
 
 2. Layer 2 (Plane 1) — Scoped EVM Vault Execution (LatticeWardVault.executeScopedAgentIntent):
-   The hot agent key can only call executeScopedAgentIntent, which enforces four strict limits on-chain:
-   - Value & Transaction Limits: Per-transaction value caps (maxTxValue), rolling daily spend caps (epochLimit), and per-intent replay protection (usedIntents[intentId]).
-   - Duration & Expiry Windows: Global authorization window expiry (windowExpiresAt), per-intent deadlines (deadline), and bounded rolling epoch durations (epochDuration).
-   - Allowed Targets & 0x0A02 Quantum-Safety Firewall: Per-asset allowlist (assetLimits[target].enabled) plus a mandatory staticcall to QoreChain precompile 0x0A02 (pqcKeyStatus) that blocks payouts to any recipient without a registered ML-DSA-87 key.
-   - Authenticated Agent Messaging: Verifies the authorized agentKey and emits AuthenticatedAgentIntentExecuted(intentId, target, recipient, value, riskScoreBps, rationaleHash).
+   Enforces 4 on-chain limits for native QOR and ERC-20 fUSD: (a) per-tx value caps (maxTxValue), rolling daily limits (epochLimit), and replay defense (usedIntents); (b) duration windows (windowExpiresAt, per-intent deadline, rolling epochDuration); (c) allowed asset targets plus a mandatory staticcall to precompile 0x0A02 (pqcKeyStatus) blocking recipients without a registered ML-DSA-87 key; and (d) authenticated intent events.
 
 3. Layer 3 (Plane 2) — Sovereign Control (NIST FIPS 204 ML-DSA-87 via Precompile 0x0A01):
-   Every administrative and emergency action (configurePolicy, setAssetLimit, sovereignWithdraw, triggerQDayEmergencyClawback, rotateSovereignKey) requires a 4,627-byte ML-DSA-87 signature verified on-chain by precompile 0x0A01 (pqcVerify). Each signature is bound to block.chainid, the vault address, a strictly incrementing policyNonce++, the action tag, and keccak256(params). The contract contains zero ecrecover and zero onlyOwner logic: msg.sender carries no administrative authority, making classical key theft useless for privilege escalation.
+   Every admin and emergency action (configurePolicy, setAssetLimit, sovereignWithdraw, triggerQDayEmergencyClawback, rotateSovereignKey) requires a 4,627-byte ML-DSA-87 signature verified by precompile 0x0A01 (pqcVerify) over block.chainid, vault address, policyNonce++, action tag, and params hash. Zero ecrecover and zero onlyOwner.
 
-3. AI Agent MCP Runtime & Consumer Web App:
-   - A fail-closed Zod intent grammar and @qorechain/sdk simulateWithRiskScore pre-flight gate prevent prompt-injected agents from expressing out-of-policy actions, exposed via a 5-tool MCP server.
-   - A consumer Web3 application (Vite + React + TypeScript) connects QoreX (scoped EVM windows + native hybrid signing) and MetaMask, verifies live 0x0A02 quantum protection, manages encrypted browser ML-DSA-87 keys (PBKDF2 + AES-256-GCM in IndexedDB), deploys isolated per-user vaults via VaultFactory, simulates and executes scoped agent payouts, and provides a one-step ML-DSA-87 Q-Day Emergency Clawback & Freeze kill-switch.
+4. AI Agent MCP Runtime, 402 Paid API & Consumer Web App:
+   Includes a 6-tool MCP server (with latticeward_pay_invoice), an HTTP 402 paid-data API (examples/agent-pays-api) where agents pay invoices directly from the vault (intentId = keccak256(invoiceId)) with replay rejection, an off-chain payee allowlist & per-payee cap gate (config/payee-policy.json, PREFLIGHT_MODE=required|advisory), and a React Web3 app with MetaMask/QoreX connection, 6h Session panel, encrypted browser ML-DSA-87 keys, and one-step Q-Day Emergency Clawback.
 
-LIVE ON-CHAIN PROOF:
-Verified live on qorechain-diana (8/8 Q-Day breach drill checks passed on 0x9697a96058555b3A0C50b2338440C84B927caB29, funded with native QOR and 50.0 ERC-20 fUSD via hybrid-signed MsgConvertCoin) and backed by 39/39 passing Foundry unit, fuzz, and invariant tests plus a QoreScan static audit.
+LIVE ON-CHAIN & E2E PROOF:
+On-chain: 8/8 Q-Day breach drill checks + 5/5 x/abstractaccount defense tests passed live on qorechain-diana, backed by 39/39 Foundry tests and a QoreScan audit. Off-chain gate + 402 API: 7/7 E2E tests passing (prompt-injection denials logged separately as "off-chain gate" in audits/verdict-ledger.jsonl).
 ```
 
 ---

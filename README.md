@@ -140,6 +140,16 @@ Full verbatim receipts and hash-chained policy verdicts are committed in [`audit
 | **Test 2c (Target & `0x0A02` Refusal)** | Unallowlisted target & non-PQC recipient (`0x0000...dEaD`) | `DENY` (`entryHash: 0x5d8055bf...83fa`) + `RecipientNotQuantumSafe` | Block `10418274` · [`D3E87638...BA65`](https://explore.qore.network/tx/D3E876383E986279BB7AA2533E36FAC9ACB767C94F33D93D490DDD4CAD8EBA65) |
 | **Test 3 (Revoke & Restore)** | Owner revokes authenticator (`MsgRevokeAuthenticator`), proves post-revocation `MsgExecuteEVM` fails (`linked key is unbound or revoked`), and restores active 30-day state | `PASS` | Revoke: [`28084ACC...1D11`](https://explore.qore.network/tx/28084ACC143F4E20BAF992CD68D3AB2E31A066944073F7BE1581F740BB361D11) · Blocked Tx: `3FDB9D39...CA80` · Restore: [`C5482CDF...9329`](https://explore.qore.network/tx/C5482CDF1F73675F30A683B738C111C105FD6F3856B812E4C529C31A8E349329) |
 
+### Agent-Pays-API (`402` Invoice Flow), Off-Chain Payee Gate & Web Session Panel
+
+To demonstrate **agents autonomously paying from the vault** while keeping on-chain enforcement separate from off-chain pre-signing controls:
+
+- **Paid API (`examples/agent-pays-api/server.ts`, `npm run api:paid`):** `GET /data` returns `402 Payment Required` with `{invoiceId, amount, asset, recipient, vault, chainId}` pointing to the `0x0A02`-registered recipient `0xD689...5aae`. `GET /data?invoice=<id>` verifies `AuthenticatedAgentIntentExecuted` on-chain (`intentId == keccak256(invoiceId)`), returns the data (`200`), and rejects invoice reuse (`409 Conflict`).
+- **Agent Client & MCP Tool (`scripts/agent-buys-data.ts`, `npm run agent:buy`, MCP `latticeward_pay_invoice`):** Runs the full `402` → signed proposal → off-chain policy gate → vault settlement (`intentId = keccak256(invoiceId)`, `rationaleHash = keccak256(description)`) → retry flow.
+- **Off-Chain Payee Policy Gate (`config/payee-policy.json`, `src/policyGate.ts`):** Enforces a payee allowlist and per-payee tx/daily caps **before signing**, logging denials to `audits/verdict-ledger.jsonl` with `enforcementLayer: "off-chain gate"` (e.g., prompt-injection denial entry `#8`, `0xf14c4c44...f89eb`) — distinct from on-chain reverts (`ExceedsScopedMaxTxValue`, `RecipientNotQuantumSafe`). Supports `PREFLIGHT_MODE=required|advisory` (default `required`; `advisory` logs `preflight_unavailable` and displays a visible UI badge).
+- **Web App Session Panel (`packages/web/src/components/SessionPanel.tsx`):** Lets owners **Start 6h Session** (`MsgOpenEVMWindow`), inspect remaining blocks/txs/budget, **Stop Session** (`MsgCloseEVMWindow`), and view recent agent payments & invoice IDs (*sessions last about 6 hours*).
+- **Automated Verification (`npm run test:agent-pays`):** `7/7` E2E tests passing (402 invoice, pre-pay 402, off-chain allow, over-cap deny, prompt-injection deny + ledger record, 200 post-pay, 409 replay rejection).
+
 ---
 
 ## 5. Credits & Attribution

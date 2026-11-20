@@ -13,6 +13,7 @@ import {
 } from "ethers";
 import {
   ERC20_ABI,
+  EVM_RPC_URL,
   FUSD_ADDRESS,
   FUSD_BANK_DENOM,
   VAULT_ABI,
@@ -20,13 +21,16 @@ import {
   explorerAddrUrl,
   explorerTxUrl,
 } from "../lib/constants";
-import { getReadProvider, type VaultSnapshot } from "../lib/chain";
+import { getReadProvider, resolveCosmosTxHash, type VaultSnapshot } from "../lib/chain";
 import { evmToQor, mapChainError, type QoreXConnection } from "../lib/wallets";
 
 interface Props {
   vault: VaultSnapshot | null;
+  vaultLoading?: boolean;
+  vaultError?: string | null;
   qorex: QoreXConnection | null;
   userFusdBalance: bigint;
+  onNotify?: (kind: "safe" | "danger", text: string) => void;
   onRefresh: () => void;
   onGoEmergency: () => void;
 }
@@ -43,34 +47,53 @@ interface FeedItem {
 
 export function DashboardPanel({
   vault,
+  vaultLoading,
+  vaultError,
   qorex,
   userFusdBalance,
+  onNotify,
   onRefresh,
   onGoEmergency,
 }: Props) {
-  const [depositQor, setDepositQor] = useState("0.25");
-  const [depositFusd, setDepositFusd] = useState("5");
+  const [depositQor, setDepositQor] = useState("");
+  const [depositFusd, setDepositFusd] = useState("");
   const [intentAsset, setIntentAsset] = useState<"QOR" | "fUSD">("QOR");
-  const [intentAmount, setIntentAmount] = useState("0.002");
-  const [intentRecipient, setIntentRecipient] = useState("0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae");
-  const [intentRationale, setIntentRationale] = useState("Scoped AI agent settlement");
+  const [intentAmount, setIntentAmount] = useState("");
+  const [intentRecipient, setIntentRecipient] = useState("");
+  const [intentRationale, setIntentRationale] = useState("");
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [mcpCopied, setMcpCopied] = useState(false);
+  const setErr = (t: string | null) => {
+    if (t) onNotify?.("danger", t);
+  };
+  const setMsg = (t: string | null) => {
+    if (t) onNotify?.("safe", t);
+  };
 
   if (!vault) {
     return (
       <section className="card">
-        <h2>No Vault Selected</h2>
+        <h2>{vaultLoading ? "Syncing Live Vault..." : vaultError ? "RPC Sync Error" : "No Vault Selected"}</h2>
         <p className="muted">
-          Create your first isolated vault from <strong>Create Vault</strong>, or pick an existing vault above.
+          {vaultLoading
+            ? "Reading Treasury & Guardrail State from QoreChain Diana Testnet (Chain ID 9800)..."
+            : vaultError
+              ? `Could not load vault telemetry from QoreChain RPC: ${vaultError}`
+              : "Create your first isolated vault from Create Vault, or pick the Live Deployed Vault above."}
         </p>
+        {!vaultLoading && (
+          <button type="button" className="btn btn-primary" style={{ marginTop: 12 }} onClick={onRefresh}>
+            Retry Sync
+          </button>
+        )}
       </section>
     );
   }
 
   const nowSec = BigInt(Math.floor(Date.now() / 1000));
+  const isAgentWallet =
+    !!qorex?.evmProvider && !!qorex.evmAddress && qorex.evmAddress.toLowerCase() === vault.agentKey.toLowerCase();
   const epochDur = BigInt(vault.epochDuration || 86400);
 
   const qorEpochExpired = nowSec >= vault.qorLimit.epochStart + epochDur;
@@ -91,11 +114,15 @@ export function DashboardPanel({
       setErr("Connect QoreX first so we can send your QOR deposit.");
       return;
     }
+    if (!depositQor || Number(depositQor) <= 0) {
+      setErr("Enter a QOR amount to deposit.");
+      return;
+    }
     setBusy("deposit-qor");
     try {
       const signer = await qorex.evmProvider.getSigner();
       const tx = await signer.sendTransaction({ to: vault.address, value: parseEther(depositQor) });
-      await tx.wait();
+      await tx.wait(1, 120_000);
       setMsg(`Deposited ${depositQor} QOR into vault.`);
       onRefresh();
     } catch (e2) {
@@ -113,12 +140,16 @@ export function DashboardPanel({
       setErr("Connect QoreX first so we can send your fUSD deposit.");
       return;
     }
+    if (!depositFusd || Number(depositFusd) <= 0) {
+      setErr("Enter an fUSD amount to deposit.");
+      return;
+    }
     setBusy("deposit-fusd");
     try {
       const signer = await qorex.evmProvider.getSigner();
       const fusd = new Contract(FUSD_ADDRESS, ERC20_ABI, signer);
       const tx = await fusd.transfer(vault.address, parseUnits(depositFusd, vault.fusdDecimals));
-      await tx.wait();
+      await tx.wait(1, 120_000);
       setMsg(`Deposited ${depositFusd} fUSD into vault.`);
       onRefresh();
     } catch (e2) {
@@ -131,6 +162,9 @@ export function DashboardPanel({
   const buildIntentTuple = () => {
     if (!isAddress(intentRecipient)) {
       throw new Error("Enter a valid 0x recipient address.");
+    }
+    if (!intentAmount || Number(intentAmount) <= 0) {
+      throw new Error("Enter a payout amount greater than 0.");
     }
     const target = intentAsset === "QOR" ? ZERO_ADDRESS : FUSD_ADDRESS;
     const value =
@@ -217,7 +251,8 @@ export function DashboardPanel({
       const signer = await qorex.evmProvider.getSigner();
       const contract = new Contract(vault.address, VAULT_ABI, signer);
       const tx = await contract.executeScopedAgentIntent(env);
-      await tx.wait();
+      await tx.wait(1, 120_000);
+      const explorerHash = await resolveCosmosTxHash(tx.hash);
       setFeed((prev) => [
         {
           id: tx.hash,
@@ -226,7 +261,7 @@ export function DashboardPanel({
           status: "ALLOWED",
           summary: `${intentAmount} ${intentAsset} -> ${intentRecipient.slice(0, 10)}...`,
           detail: "Committed on QoreChain Diana Testnet",
-          txHash: tx.hash,
+          txHash: explorerHash,
         },
         ...prev,
       ]);
@@ -259,271 +294,58 @@ export function DashboardPanel({
 
   return (
     <div>
-      {err && (
-        <div className="alert alert-danger" role="alert">
-          {err}
-        </div>
-      )}
-      {msg && (
-        <div className="alert alert-safe" role="status" aria-live="polite">
-          {msg}
-        </div>
-      )}
-
-      {/* 1. Live Vault Telemetry Dashboard */}
+      {/* 1. Clean Vault Balance & Guardrail Summary */}
       <section className="card" aria-labelledby="dash-heading">
         <div className="row-wrap" style={{ justifyContent: "space-between", marginBottom: 12 }}>
           <div>
-            <div className="eyebrow">Live Vault Telemetry</div>
+            <div className="eyebrow">Your Protected Vault</div>
             <h2 id="dash-heading" style={{ marginTop: 4 }}>
-              Treasury &amp; Guardrail State
+              Balance &amp; Daily Limits
             </h2>
-            <div className="mono muted">EVM: {vault.address}</div>
-            <div className="mono muted">Native: {vault.qorAddress}</div>
           </div>
           <div className="row-wrap">
             <span className={`badge ${vault.frozen ? "badge-danger" : "badge-safe"}`}>
-              {vault.frozen ? "❄ Frozen (Paused)" : "● Active"}
+              {vault.frozen ? "❄ Paused" : "● Agent Active"}
             </span>
             <span className={`badge ${vault.requireRecipientPqc ? "badge-safe" : "badge-caution"}`}>
-              {vault.requireRecipientPqc ? "✓ 0x0A02 Firewall ON" : "⚠ 0x0A02 Firewall OFF"}
+              {vault.requireRecipientPqc ? "✓ Quantum Firewall ON" : "⚠ Firewall OFF"}
             </span>
-            <button type="button" className="btn" onClick={onRefresh}>
-              Refresh
-            </button>
             <button type="button" className="btn btn-destructive" onClick={onGoEmergency}>
               Kill-Switch
             </button>
           </div>
         </div>
 
-        <p className="muted">
-          Funds in your vault are protected by your Lattice key (ML-DSA-87 via <code>0x0A01</code>) and on-chain daily
-          limits.
-        </p>
-
-        <div className="grid-3" style={{ marginTop: 16 }}>
+        <div className="grid-2" style={{ marginTop: 12 }}>
           <div className="diff-box" style={{ margin: 0 }}>
-            <div className="eyebrow">Native QOR Balance</div>
+            <div className="eyebrow">QOR Balance</div>
             <div className="big-metric tabular" style={{ marginTop: 6 }}>
               {formatEther(vault.qorBalance)} QOR
             </div>
             <div className="muted tabular" style={{ marginTop: 8 }}>
-              Remaining today: <strong>{qorRem}</strong> / {qorDay} QOR
+              Left today: <strong>{qorRem}</strong> / {qorDay} QOR · Max {qorTx} QOR/tx
             </div>
-            <div className="muted tabular">Max per payment: {qorTx} QOR</div>
           </div>
 
           <div className="diff-box" style={{ margin: 0 }}>
-            <div className="eyebrow">ERC-20 fUSD Balance</div>
+            <div className="eyebrow">fUSD Balance</div>
             <div className="big-metric tabular" style={{ marginTop: 6 }}>
               {formatUnits(vault.fusdBalance, vault.fusdDecimals)} fUSD
             </div>
             <div className="muted tabular" style={{ marginTop: 8 }}>
-              Remaining today: <strong>{fusdRem}</strong> / {fusdDay} fUSD
-            </div>
-            <div className="muted tabular">Max per payment: {fusdTx} fUSD</div>
-          </div>
-
-          <div className="diff-box" style={{ margin: 0 }}>
-            <div className="row-wrap" style={{ justifyContent: "space-between" }}>
-              <div className="eyebrow">Replay &amp; Plane Telemetry</div>
-              <button
-                type="button"
-                className="tooltip-btn"
-                title="The day starts at the first payment."
-                aria-label="Daily limit info: The day starts at the first payment"
-                onClick={() => setMsg("Daily limit note: The day starts at the first payment.")}
-              >
-                ?
-              </button>
-            </div>
-            <div className="tabular" style={{ marginTop: 8 }}>
-              <strong>Policy Nonce:</strong> <code>{vault.policyNonce.toString()}</code>
-            </div>
-            <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Window Expiry:</strong>{" "}
-              <span className="muted">{new Date(vault.windowExpiresAt * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC</span>
-            </div>
-            <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Epoch Duration:</strong> <span className="muted">{Math.round(vault.epochDuration / 3600)}h rolling</span>
-            </div>
-            <div style={{ marginTop: 6 }}>
-              <strong>Active Agent Key:</strong>
-              <div className="mono muted">{vault.agentKey}</div>
-              <div className="mono muted">{evmToQor(vault.agentKey)}</div>
-            </div>
-            <div style={{ marginTop: 6 }}>
-              <strong>Sovereign Key Hash:</strong>
-              <div className="mono muted">{vault.sovereignKeyHash.slice(0, 18)}...</div>
+              Left today: <strong>{fusdRem}</strong> / {fusdDay} fUSD · Max {fusdTx} fUSD/tx
             </div>
           </div>
         </div>
       </section>
 
-      {/* 1.5 Layer 1 Protocol-Level x/abstractaccount Spending Rules & Hash-Chained Verdict Ledger */}
-      <section className="card" aria-labelledby="aa-layer-heading">
-        <div className="row-wrap" style={{ justifyContent: "space-between", marginBottom: 12 }}>
-          <div>
-            <div className="eyebrow">Layer 1 · Protocol-Level Smart-Account Spending Rules</div>
-            <h2 id="aa-layer-heading" style={{ marginTop: 4 }}>
-              Native <code>x/abstractaccount</code> &amp; Authenticated Verdict Ledger
-            </h2>
-          </div>
-          <div className="row-wrap">
-            <span className="badge badge-safe">● x/abstractaccount Active</span>
-            <span className="badge badge-safe">✓ Hybrid ML-DSA-87 + secp256k1 Authority</span>
-          </div>
-        </div>
-
-        <p className="muted">
-          Before any agent proposal reaches the EVM or <code>LatticeWardVault</code>, QoreChain&apos;s native{" "}
-          <code>x/abstractaccount</code> module enforces protocol-level <code>denom_limits</code> for both native{" "}
-          <code>uqor</code> and bank-coin <code>fUSD</code> (<code>erc20:0x9714...63CA</code>), while{" "}
-          <code>LatticeWardVault.assetLimits</code> enforces ERC-20 <code>fUSD</code> and native <code>QOR</code> caps
-          inside the EVM vault alongside a deny-by-default <code>allowed_evm_calls</code> target allowlist, 30-day
-          authenticator duration expiry, and EIP-191 <code>evmAuthSignBytesV2</code> authenticated messaging.
-        </p>
-
-        <div className="grid-3" style={{ marginTop: 12 }}>
-          <div className="diff-box" style={{ margin: 0 }}>
-            <div className="eyebrow">On-Chain Denom &amp; Value Limits</div>
-            <div className="tabular" style={{ marginTop: 8 }}>
-              <strong>Rule ID:</strong> <code>latticeward-vault-only</code>
-            </div>
-            <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>uqor Limits:</strong> <code>100,000 uqor/tx</code> (0.1 QOR) · <code>300,000 uqor/day</code> (0.3 QOR)
-            </div>
-            <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Bank fUSD Limits:</strong> <code>1,000,000/tx</code> (1.0 fUSD) · <code>3,000,000/day</code> (3.0 fUSD)
-            </div>
-            <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Vault ERC-20 fUSD:</strong> <code>1.0 fUSD/tx</code> · <code>3.0 fUSD/day</code> (via <code>assetLimits</code>)
-            </div>
-          </div>
-
-          <div className="diff-box" style={{ margin: 0 }}>
-            <div className="eyebrow">Target Allowlist &amp; Linked Authenticator</div>
-            <div style={{ marginTop: 8 }}>
-              <strong>Allowed EVM Calls (Deny-by-Default):</strong>
-              <div className="mono muted">{vault.address}</div>
-            </div>
-            <div style={{ marginTop: 6 }}>
-              <strong>Linked Authenticator (secp256k1 / EIP-191):</strong>
-              <div className="mono muted">{vault.agentKey}</div>
-            </div>
-            <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Permissions:</strong> <code>[&quot;evm&quot;, &quot;send&quot;]</code> (30-day TTL through Dec 15)
-            </div>
-          </div>
-
-          <div className="diff-box" style={{ margin: 0 }}>
-            <div className="eyebrow">Live Testnet Proof Hashes (Chain ID 9800)</div>
-            <div className="tabular" style={{ marginTop: 8 }}>
-              <strong>AA Rules &amp; 30d Link:</strong>{" "}
-              <a
-                className="mono"
-                href={explorerTxUrl("A374DDC5C787BFAD914F9870F9318DB321C8580EBCC8CA0715505B239D9A9388")}
-                target="_blank"
-                rel="noreferrer"
-              >
-                A374DDC5...9388
-              </a>
-            </div>
-            <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Drill Window Closed:</strong>{" "}
-              <a
-                className="mono"
-                href={explorerTxUrl("023BB99C0C6839A32C0A34E04B5A7E70B426E522358189878F92800E6DDE57D4")}
-                target="_blank"
-                rel="noreferrer"
-              >
-                023BB99C...57D4
-              </a>
-            </div>
-            <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>In-Policy MsgExecuteEVM:</strong>{" "}
-              <a
-                className="mono"
-                href={explorerTxUrl("D3AB9E1E52052BF0AB2D5A559A2EC9AB40D3563F05B5A8B867404D79D6D17E7A")}
-                target="_blank"
-                rel="noreferrer"
-              >
-                D3AB9E1E...7E7A
-              </a>
-            </div>
-            <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Revoke / Restore Proof:</strong>{" "}
-              <a
-                className="mono"
-                href={explorerTxUrl("28084ACC143F4E20BAF992CD68D3AB2E31A066944073F7BE1581F740BB361D11")}
-                target="_blank"
-                rel="noreferrer"
-              >
-                28084ACC...1D11
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginTop: 16 }}>
-          <div className="eyebrow">Hash-Chained Policy Verdict Ledger (audits/verdict-ledger.jsonl)</div>
-          <ul className="checklist" style={{ marginTop: 8 }}>
-            <li className="check-item hairline-row">
-              <div>
-                <span className="badge badge-safe">ALLOW #4</span>{" "}
-                <strong className="tabular">1,000 uqor (0.001 QOR) → {vault.address.slice(0, 10)}...</strong>
-                <div className="muted mono" style={{ marginTop: 4 }}>
-                  entryHash: 0x19b2be9a...02954 · All 6 checks passed (tx, value, duration, target, 0x0A02, EIP-191 sig)
-                </div>
-              </div>
-              <a
-                className="btn"
-                href={explorerTxUrl("D3AB9E1E52052BF0AB2D5A559A2EC9AB40D3563F05B5A8B867404D79D6D17E7A")}
-                target="_blank"
-                rel="noreferrer"
-              >
-                View Tx
-              </a>
-            </li>
-            <li className="check-item hairline-row">
-              <div>
-                <span className="badge badge-danger">DENY #5</span>{" "}
-                <strong className="tabular">1,000,000 uqor (1.0 QOR) → Value Cap Refusal</strong>
-                <div className="muted mono" style={{ marginTop: 4 }}>
-                  entryHash: 0x8babab61...c6d1 · Blocked by x/abstractaccount perTxLimit (100,000 uqor) &amp; ExceedsScopedMaxTxValue
-                </div>
-              </div>
-            </li>
-            <li className="check-item hairline-row">
-              <div>
-                <span className="badge badge-danger">DENY #6</span>{" "}
-                <strong className="tabular">1,000 uqor → Expired Duration Window Refusal</strong>
-                <div className="muted mono" style={{ marginTop: 4 }}>
-                  entryHash: 0x95b9f539...d5a3 · Blocked by deadline / window expiry check &amp; IntentExpired
-                </div>
-              </div>
-            </li>
-            <li className="check-item hairline-row">
-              <div>
-                <span className="badge badge-danger">DENY #7</span>{" "}
-                <strong className="tabular">0x0000...dEaD → Target Allowlist &amp; 0x0A02 Firewall Refusal</strong>
-                <div className="muted mono" style={{ marginTop: 4 }}>
-                  entryHash: 0x5d8055bf...83fa · Denied by x/abstractaccount allowed_evm_calls &amp; RecipientNotQuantumSafe
-                </div>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      {/* 2. Live Agent Intent Executor & Feed */}
+      {/* 2. Simple Agent Payment Runner */}
       <section className="card" aria-labelledby="executor-heading">
         <div className="row-wrap" style={{ justifyContent: "space-between", marginBottom: 8 }}>
           <div>
-            <div className="eyebrow">Plane 1 · Scoped Execution</div>
+            <div className="eyebrow">Autonomous Agent</div>
             <h2 id="executor-heading" style={{ marginTop: 4 }}>
-              Simulate / Execute Scoped Agent Payout
+              Test or Run an Agent Payment
             </h2>
           </div>
           <div className="row-wrap">
@@ -536,7 +358,7 @@ export function DashboardPanel({
                 setIntentRecipient("0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae");
               }}
             >
-              Preset: Valid Payout
+              Valid Payout
             </button>
             <button
               type="button"
@@ -547,7 +369,7 @@ export function DashboardPanel({
                 setIntentRecipient("0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae");
               }}
             >
-              Preset: Over-Spend (10x)
+              Try Over-Spend
             </button>
             <button
               type="button"
@@ -558,14 +380,14 @@ export function DashboardPanel({
                 setIntentRecipient(Wallet.createRandom().address);
               }}
             >
-              Preset: Unprotected Recipient
+              Unprotected Wallet
             </button>
           </div>
         </div>
 
         <p className="muted">
-          Test <code>executeScopedAgentIntent</code> against live vault guardrails (`maxTxValue`, daily limit, and{" "}
-          <code>0x0A02</code> quantum-safe recipient check).
+          Your agent can only spend within your daily caps and only to quantum-protected wallets. Try a normal payout
+          or test an attack below.
         </p>
 
         <div className="grid-3">
@@ -576,8 +398,8 @@ export function DashboardPanel({
               value={intentAsset}
               onChange={(e) => setIntentAsset(e.target.value as "QOR" | "fUSD")}
             >
-              <option value="QOR">Native QOR</option>
-              <option value="fUSD">ERC-20 fUSD</option>
+              <option value="QOR">QOR</option>
+              <option value="fUSD">fUSD</option>
             </select>
           </div>
           <div className="field">
@@ -589,15 +411,17 @@ export function DashboardPanel({
               min="0"
               value={intentAmount}
               onChange={(e) => setIntentAmount(e.target.value)}
+              placeholder={intentAsset === "QOR" ? "e.g. 0.002" : "e.g. 0.5"}
             />
           </div>
           <div className="field">
-            <label htmlFor="ex-rationale">Intent Rationale</label>
+            <label htmlFor="ex-rationale">Note</label>
             <input
               id="ex-rationale"
               type="text"
               value={intentRationale}
               onChange={(e) => setIntentRationale(e.target.value)}
+              placeholder="e.g. Scoped AI agent settlement"
             />
           </div>
         </div>
@@ -609,7 +433,7 @@ export function DashboardPanel({
             type="text"
             value={intentRecipient}
             onChange={(e) => setIntentRecipient(e.target.value)}
-            placeholder="0x..."
+            placeholder="0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae"
           />
         </div>
 
@@ -620,21 +444,32 @@ export function DashboardPanel({
             onClick={() => void handleSimulateIntent()}
             disabled={busy !== null}
           >
-            {busy === "sim-intent" ? "Simulating..." : "Simulate Payout (Live eth_call)"}
+            {busy === "sim-intent" ? "Checking..." : "Test Against Policy"}
           </button>
           <button
             type="button"
             className="btn"
             onClick={() => void handleExecuteIntentOnChain()}
-            disabled={busy !== null || !qorex?.evmProvider}
+            disabled={busy !== null || !isAgentWallet}
+            title={
+              isAgentWallet
+                ? "Broadcast this payout on-chain from the agent wallet"
+                : "Only the vault's agent wallet can send payouts. Use Test Against Policy to check a payout."
+            }
           >
-            {busy === "exec-intent" ? "Broadcasting..." : "Execute On-Chain via QoreX"}
+            {busy === "exec-intent" ? "Sending..." : "Send via QoreX"}
           </button>
         </div>
+        {!isAgentWallet && (
+          <p className="muted" style={{ marginTop: 8, marginBottom: 0 }}>
+            Only the vault&apos;s agent wallet ({vault.agentKey.slice(0, 8)}...{vault.agentKey.slice(-4)}) can send
+            payouts. <strong>Test Against Policy</strong> checks any payout live on QoreChain without signing.
+          </p>
+        )}
 
         {feed.length > 0 && (
           <div style={{ marginTop: 16 }}>
-            <div className="eyebrow">Real-Time Agent Execution &amp; Blocked-Attack Feed</div>
+            <div className="eyebrow">Recent Checks</div>
             <ul className="checklist">
               {feed.map((f) => (
                 <li key={f.id} className="check-item attack-reveal">
@@ -662,88 +497,257 @@ export function DashboardPanel({
         )}
       </section>
 
-      {/* 3. Deposit */}
-      <section className="card" aria-labelledby="deposit-heading">
-        <h2 id="deposit-heading">Deposit into Vault</h2>
-        <div className="grid-2">
-          <form onSubmit={handleDepositQor}>
-            <div className="field">
-              <label htmlFor="dep-qor">Native QOR amount</label>
-              <input
-                id="dep-qor"
-                type="number"
-                step="0.01"
-                min="0.001"
-                value={depositQor}
-                onChange={(e) => setDepositQor(e.target.value)}
-              />
+      {/* 2.5 Collapsible Connect AI Agent (MCP / Bot) Drawer */}
+      <details className="disclosure-card">
+        <summary>Connect an AI Agent (Claude / Cursor / MCP Bot)</summary>
+        <div className="disclosure-body" style={{ paddingTop: 16 }}>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Plug any MCP-compatible AI agent into this vault so it can autonomously pay vendors or APIs from your
+            deposited QOR &amp; fUSD balance — strictly bounded by your daily caps and <code>0x0A02</code> quantum
+            firewall.
+          </p>
+          <div className="diff-box" style={{ marginBottom: 12 }}>
+            <div className="eyebrow">Authorized Agent Wallet for This Vault</div>
+            <div className="mono" style={{ marginTop: 4 }}>
+              {vault.agentKey}
             </div>
-            <button type="submit" className="btn btn-primary" disabled={busy !== null || !qorex?.evmProvider}>
-              {busy === "deposit-qor" ? "Sending..." : "Deposit QOR"}
+            <div className="mono muted">{evmToQor(vault.agentKey)}</div>
+          </div>
+          <div className="row-wrap" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+            <strong>Copy-ready MCP Config (Claude Desktop / Cursor)</strong>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                const snippet = JSON.stringify(
+                  {
+                    mcpServers: {
+                      latticeward: {
+                        command: "npx",
+                        args: ["tsx", "packages/agent-mcp/src/mcp-server.ts"],
+                        env: {
+                          QOR_EVM_RPC: EVM_RPC_URL,
+                          VAULT_ADDRESS: vault.address,
+                          FUSD_ADDRESS,
+                          AGENT_PRIVATE_KEY: "<private-key-for-" + vault.agentKey.slice(0, 8) + "...>",
+                        },
+                      },
+                    },
+                  },
+                  null,
+                  2,
+                );
+                void navigator.clipboard.writeText(snippet);
+                setMcpCopied(true);
+                setMsg("MCP config copied to clipboard.");
+                window.setTimeout(() => setMcpCopied(false), 2000);
+              }}
+            >
+              {mcpCopied ? "✓ Copied!" : "Copy MCP Config"}
             </button>
-          </form>
+          </div>
+          <pre className="diff-box mono" style={{ overflowX: "auto", margin: 0 }}>
+            {JSON.stringify(
+              {
+                mcpServers: {
+                  latticeward: {
+                    command: "npx",
+                    args: ["tsx", "packages/agent-mcp/src/mcp-server.ts"],
+                    env: {
+                      QOR_EVM_RPC: EVM_RPC_URL,
+                      VAULT_ADDRESS: vault.address,
+                      FUSD_ADDRESS,
+                      AGENT_PRIVATE_KEY: "<private-key-for-" + vault.agentKey.slice(0, 8) + "...>",
+                    },
+                  },
+                },
+              },
+              null,
+              2,
+            )}
+          </pre>
+        </div>
+      </details>
 
-          {userFusdBalance > 0n ? (
-            <form onSubmit={handleDepositFusd}>
+      {/* 3. Collapsible Deposit Drawer */}
+      <details className="disclosure-card">
+        <summary>Deposit Funds into Vault (QOR &amp; fUSD)</summary>
+        <div className="disclosure-body" style={{ paddingTop: 16 }}>
+          <div className="grid-2">
+            <form onSubmit={handleDepositQor}>
               <div className="field">
-                <label htmlFor="dep-fusd">
-                  ERC-20 fUSD (you hold {formatUnits(userFusdBalance, vault.fusdDecimals)} fUSD)
-                </label>
+                <label htmlFor="dep-qor">QOR amount</label>
                 <input
-                  id="dep-fusd"
+                  id="dep-qor"
                   type="number"
-                  step="0.1"
-                  min="0.1"
-                  value={depositFusd}
-                  onChange={(e) => setDepositFusd(e.target.value)}
+                  step="0.01"
+                  min="0.001"
+                  value={depositQor}
+                  onChange={(e) => setDepositQor(e.target.value)}
+                  placeholder="e.g. 0.25"
                 />
               </div>
               <button type="submit" className="btn btn-primary" disabled={busy !== null || !qorex?.evmProvider}>
-                {busy === "deposit-fusd" ? "Sending..." : "Deposit fUSD"}
+                {busy === "deposit-qor" ? "Sending..." : "Deposit QOR"}
               </button>
             </form>
-          ) : (
-            <div className="alert alert-caution" style={{ margin: 0 }}>
-              <strong>0 ERC-20 fUSD in QoreX EVM.</strong> Faucet fUSD starts as a Cosmos bank coin (
-              <span className="mono">{FUSD_BANK_DENOM}</span>). Convert it to ERC-20 fUSD via QoreX or{" "}
-              <code>npm run convert:fusd</code> before depositing.
-            </div>
-          )}
-        </div>
-      </section>
 
-      {/* 4. Activity Timeline */}
-      <section className="card" aria-labelledby="timeline-heading">
-        <div className="row-wrap" style={{ justifyContent: "space-between", marginBottom: 8 }}>
-          <h2 id="timeline-heading" style={{ margin: 0 }}>
-            On-Chain Activity Timeline
-          </h2>
-          <a href={explorerAddrUrl(vault.address)} target="_blank" rel="noreferrer">
-            Open Vault on Explorer
-          </a>
-        </div>
-        {vault.events.length === 0 ? (
-          <p className="muted" style={{ margin: 0 }}>
-            No recent vault events in the last 50,000 blocks.
-          </p>
-        ) : (
-          <ul className="checklist">
-            {vault.events.map((ev) => (
-              <li key={ev.id} className="check-item hairline-row">
-                <div>
-                  <strong>{ev.title}</strong>
-                  <div className="muted tabular">
-                    Block {ev.blockNumber} · {ev.detail}
-                  </div>
+            {userFusdBalance > 0n ? (
+              <form onSubmit={handleDepositFusd}>
+                <div className="field">
+                  <label htmlFor="dep-fusd">
+                    fUSD (you hold {formatUnits(userFusdBalance, vault.fusdDecimals)} fUSD)
+                  </label>
+                  <input
+                    id="dep-fusd"
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    value={depositFusd}
+                    onChange={(e) => setDepositFusd(e.target.value)}
+                    placeholder="e.g. 5"
+                  />
                 </div>
-                <a className="btn" href={explorerTxUrl(ev.txHash)} target="_blank" rel="noreferrer">
-                  View Tx
+                <button type="submit" className="btn btn-primary" disabled={busy !== null || !qorex?.evmProvider}>
+                  {busy === "deposit-fusd" ? "Sending..." : "Deposit fUSD"}
+                </button>
+              </form>
+            ) : (
+              <div className="alert alert-caution" style={{ margin: 0 }}>
+                <strong>0 ERC-20 fUSD in QoreX EVM.</strong> Faucet fUSD starts as a Cosmos bank coin (
+                <span className="mono">{FUSD_BANK_DENOM}</span>). Convert it to ERC-20 fUSD via QoreX before
+                depositing.
+              </div>
+            )}
+          </div>
+        </div>
+      </details>
+
+      {/* 4. Collapsible Protocol Proofs & Technical Telemetry (for auditors & judges) */}
+      <details className="disclosure-card">
+        <summary>Protocol Proofs, x/abstractaccount &amp; On-Chain Activity</summary>
+        <div className="disclosure-body" style={{ paddingTop: 16 }}>
+          <div className="row-wrap" style={{ justifyContent: "space-between", marginBottom: 12 }}>
+            <div>
+              <div className="mono muted">Vault EVM: {vault.address}</div>
+              <div className="mono muted">Vault Native: {vault.qorAddress}</div>
+            </div>
+            <a href={explorerAddrUrl(vault.address)} target="_blank" rel="noreferrer">
+              Open on Explorer
+            </a>
+          </div>
+
+          <div className="grid-3" style={{ marginBottom: 16 }}>
+            <div className="diff-box" style={{ margin: 0 }}>
+              <div className="eyebrow">Vault Telemetry</div>
+              <div className="tabular" style={{ marginTop: 8 }}>
+                <strong>Policy Nonce:</strong> <code>{vault.policyNonce.toString()}</code>
+              </div>
+              <div className="tabular" style={{ marginTop: 4 }}>
+                <strong>Epoch:</strong> <span className="muted">{Math.round(vault.epochDuration / 3600)}h rolling</span>
+              </div>
+              <div style={{ marginTop: 6 }}>
+                <strong>Agent Key:</strong>
+                <div className="mono muted">{vault.agentKey}</div>
+                <div className="mono muted">{evmToQor(vault.agentKey)}</div>
+              </div>
+              <div style={{ marginTop: 6 }}>
+                <strong>Lattice Key Hash:</strong>
+                <div className="mono muted">{vault.sovereignKeyHash.slice(0, 18)}...</div>
+              </div>
+            </div>
+
+            <div className="diff-box" style={{ margin: 0 }}>
+              <div className="eyebrow">Layer 1 · x/abstractaccount</div>
+              <div className="tabular" style={{ marginTop: 8 }}>
+                <strong>Rule:</strong> <code>latticeward-vault-only</code>
+              </div>
+              <div className="tabular" style={{ marginTop: 4 }}>
+                <strong>uqor:</strong> <code>100k/tx</code> · <code>300k/day</code>
+              </div>
+              <div className="tabular" style={{ marginTop: 4 }}>
+                <strong>Bank fUSD:</strong> <code>1M/tx</code> · <code>3M/day</code>
+              </div>
+              <div className="tabular" style={{ marginTop: 4 }}>
+                <strong>Permissions:</strong> <code>[&quot;evm&quot;, &quot;send&quot;]</code> (30d TTL)
+              </div>
+            </div>
+
+            <div className="diff-box" style={{ margin: 0 }}>
+              <div className="eyebrow">Live Testnet Proofs (9800)</div>
+              <div className="tabular" style={{ marginTop: 8 }}>
+                <strong>AA Rules:</strong>{" "}
+                <a
+                  className="mono"
+                  href={explorerTxUrl("A374DDC5C787BFAD914F9870F9318DB321C8580EBCC8CA0715505B239D9A9388")}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  A374DDC5...9388
                 </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+              </div>
+              <div className="tabular" style={{ marginTop: 4 }}>
+                <strong>Drill Closed:</strong>{" "}
+                <a
+                  className="mono"
+                  href={explorerTxUrl("023BB99C0C6839A32C0A34E04B5A7E70B426E522358189878F92800E6DDE57D4")}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  023BB99C...57D4
+                </a>
+              </div>
+              <div className="tabular" style={{ marginTop: 4 }}>
+                <strong>MsgExecuteEVM:</strong>{" "}
+                <a
+                  className="mono"
+                  href={explorerTxUrl("D3AB9E1E52052BF0AB2D5A559A2EC9AB40D3563F05B5A8B867404D79D6D17E7A")}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  D3AB9E1E...7E7A
+                </a>
+              </div>
+              <div className="tabular" style={{ marginTop: 4 }}>
+                <strong>Revoke Proof:</strong>{" "}
+                <a
+                  className="mono"
+                  href={explorerTxUrl("28084ACC143F4E20BAF992CD68D3AB2E31A066944073F7BE1581F740BB361D11")}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  28084ACC...1D11
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <div className="eyebrow">On-Chain Activity Timeline</div>
+            {vault.events.length === 0 ? (
+              <p className="muted" style={{ marginTop: 8, marginBottom: 0 }}>
+                No recent vault events in the last 50,000 blocks.
+              </p>
+            ) : (
+              <ul className="checklist" style={{ marginTop: 8 }}>
+                {vault.events.map((ev) => (
+                  <li key={ev.id} className="check-item hairline-row">
+                    <div>
+                      <strong>{ev.title}</strong>
+                      <div className="muted tabular">
+                        Block {ev.blockNumber} · {ev.detail}
+                      </div>
+                    </div>
+                    <a className="btn" href={explorerTxUrl(ev.txHash)} target="_blank" rel="noreferrer">
+                      View Tx
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </details>
     </div>
   );
 }

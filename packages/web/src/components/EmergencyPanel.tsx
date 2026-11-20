@@ -17,6 +17,7 @@ interface Props {
   unlockedSigner: BrowserKeySigner | null;
   evmWindow: EvmWindowStatus | null;
   relayerUrl: string;
+  onOpenWindowInQoreX?: () => void;
   onRefresh: () => void;
 }
 
@@ -26,13 +27,14 @@ export function EmergencyPanel({
   unlockedSigner,
   evmWindow,
   relayerUrl,
+  onOpenWindowInQoreX,
   onRefresh,
 }: Props) {
-  const [newAgent, setNewAgent] = useState(() => Wallet.createRandom().address);
-  const [rescueAddress, setRescueAddress] = useState("0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae");
+  const [newAgent, setNewAgent] = useState("");
+  const [rescueAddress, setRescueAddress] = useState("");
   const [sweepAssets, setSweepAssets] = useState(true);
-  const [withdrawTo, setWithdrawTo] = useState(qorex?.evmAddress || "");
-  const [withdrawAmt, setWithdrawAmt] = useState("0.1");
+  const [withdrawTo, setWithdrawTo] = useState("");
+  const [withdrawAmt, setWithdrawAmt] = useState("");
   const [withdrawAsset, setWithdrawAsset] = useState<"QOR" | "fUSD">("QOR");
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -51,11 +53,18 @@ export function EmergencyPanel({
     );
   }
 
+  const keyMatchesVault =
+    !unlockedSigner || unlockedSigner.backup.keyHash.toLowerCase() === vault.sovereignKeyHash.toLowerCase();
+
   const toggleFreeze = async (freeze: boolean) => {
     setErr(null);
     setTxHash(null);
     if (!unlockedSigner) {
       setErr("Your Lattice key is locked. Unlock it above before signing an emergency action.");
+      return;
+    }
+    if (!keyMatchesVault) {
+      setErr("Your unlocked Lattice Key does not own this vault. Switch to your own vault or import this vault's key.");
       return;
     }
     setBusy(freeze ? "freeze" : "unfreeze");
@@ -99,14 +108,20 @@ export function EmergencyPanel({
       setErr("Unlock your Lattice key first to sign the ML-DSA-87 Q-Day Emergency Clawback.");
       return;
     }
-    if (!isAddress(newAgent)) {
-      setErr("Enter a valid 0x replacement agent address.");
+    if (!keyMatchesVault) {
+      setErr("Your unlocked Lattice Key does not own this vault. Switch to your own vault or import this vault's key.");
       return;
     }
-    const rescueTarget = sweepAssets ? rescueAddress.trim() : ZERO_ADDRESS;
+    const effectiveNewAgent = newAgent.trim() || ZERO_ADDRESS;
+    if (effectiveNewAgent !== ZERO_ADDRESS && !isAddress(effectiveNewAgent)) {
+      setErr("Enter a valid 0x replacement agent address, or leave blank to revoke.");
+      return;
+    }
+    const defaultRescue = qorex?.evmAddress || "";
+    const rescueTarget = sweepAssets ? (rescueAddress.trim() || defaultRescue) : ZERO_ADDRESS;
     if (sweepAssets) {
       if (!isAddress(rescueTarget) || rescueTarget === ZERO_ADDRESS) {
-        setErr("Enter a valid 0x quantum-safe rescue address.");
+        setErr("Connect QoreX or enter a valid 0x quantum-safe rescue address.");
         return;
       }
       const pqc = await checkPqcKeyStatus(rescueTarget);
@@ -122,7 +137,7 @@ export function EmergencyPanel({
     try {
       const assets = sweepAssets ? [ZERO_ADDRESS, FUSD_ADDRESS] : [];
       const clawback = {
-        newAgent,
+        newAgent: effectiveNewAgent,
         rescue: rescueTarget,
         assets,
       };
@@ -177,8 +192,16 @@ export function EmergencyPanel({
       setErr("Unlock your Lattice key first.");
       return;
     }
+    if (!keyMatchesVault) {
+      setErr("Your unlocked Lattice Key does not own this vault. Switch to your own vault or import this vault's key.");
+      return;
+    }
     if (!isAddress(withdrawTo)) {
       setErr("Enter a valid 0x destination address.");
+      return;
+    }
+    if (!withdrawAmt || Number(withdrawAmt) <= 0) {
+      setErr("Enter a withdrawal amount greater than 0.");
       return;
     }
     setBusy("withdraw");
@@ -248,40 +271,6 @@ export function EmergencyPanel({
           <code>0x0A02</code>-verified quantum-safe rescue address.
         </p>
 
-        <div className="grid-2">
-          <div className="field">
-            <label htmlFor="cb-new-agent">Replacement Agent Address (0x...)</label>
-            <div className="row-wrap">
-              <input
-                id="cb-new-agent"
-                type="text"
-                value={newAgent}
-                onChange={(e) => setNewAgent(e.target.value)}
-                style={{ flex: 1 }}
-              />
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setNewAgent(Wallet.createRandom().address)}
-              >
-                Rotate Fresh
-              </button>
-            </div>
-          </div>
-
-          <div className="field">
-            <label htmlFor="cb-rescue">Quantum-Safe Rescue Address (0x0A02 verified)</label>
-            <input
-              id="cb-rescue"
-              type="text"
-              value={rescueAddress}
-              onChange={(e) => setRescueAddress(e.target.value)}
-              disabled={!sweepAssets}
-              placeholder="0x..."
-            />
-          </div>
-        </div>
-
         <label className="row-wrap" style={{ marginBottom: 12 }}>
           <input
             type="checkbox"
@@ -289,8 +278,59 @@ export function EmergencyPanel({
             onChange={(e) => setSweepAssets(e.target.checked)}
             style={{ width: 20, height: 20 }}
           />
-          <span>Sweep native QOR and ERC-20 fUSD to the quantum-safe rescue address during clawback</span>
+          <span>
+            Sweep QOR and fUSD back to{" "}
+            {rescueAddress.trim() ? (
+              <span className="mono">{rescueAddress.trim().slice(0, 10)}...</span>
+            ) : qorex?.evmAddress ? (
+              <>
+                your connected QoreX wallet (<span className="mono">{qorex.evmAddress.slice(0, 10)}...</span>)
+              </>
+            ) : (
+              "your connected QoreX wallet"
+            )}
+          </span>
         </label>
+
+        <details className="disclosure-card" style={{ marginBottom: 14 }}>
+          <summary>Custom rescue or replacement agent address (optional)</summary>
+          <div className="disclosure-body" style={{ paddingTop: 14 }}>
+            <div className="grid-2">
+              <div className="field">
+                <label htmlFor="cb-rescue">Override Rescue Address (0x0A02 verified)</label>
+                <input
+                  id="cb-rescue"
+                  type="text"
+                  value={rescueAddress}
+                  onChange={(e) => setRescueAddress(e.target.value)}
+                  disabled={!sweepAssets}
+                  placeholder={qorex?.evmAddress || "0x... (defaults to connected QoreX wallet)"}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="cb-new-agent">Replacement Agent Address (blank = revoke)</label>
+                <div className="row-wrap">
+                  <input
+                    id="cb-new-agent"
+                    type="text"
+                    value={newAgent}
+                    onChange={(e) => setNewAgent(e.target.value)}
+                    placeholder="Leave blank to revoke agent"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setNewAgent(Wallet.createRandom().address)}
+                  >
+                    Rotate Fresh
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
 
         {!confirmClawbackOpen ? (
           <button
@@ -307,8 +347,13 @@ export function EmergencyPanel({
               <strong>Confirm atomic Q-Day Clawback:</strong>
               <br />• Freeze vault: <code>true</code>
               <br />• Revoke old agent <span className="mono">{vault.agentKey.slice(0, 10)}...</span> →{" "}
-              <span className="mono">{newAgent.slice(0, 10)}...</span>
-              <br />• Sweep QOR &amp; fUSD: {sweepAssets ? <span className="mono">{rescueAddress}</span> : "No (freeze + rotate only)"}
+              <span className="mono">{newAgent.trim() ? `${newAgent.trim().slice(0, 10)}...` : "Revoked (0x0000...)"}</span>
+              <br />• Sweep QOR &amp; fUSD:{" "}
+              {sweepAssets ? (
+                <span className="mono">{rescueAddress.trim() || qorex?.evmAddress || "Connect QoreX"}</span>
+              ) : (
+                "No (freeze + revoke only)"
+              )}
             </p>
             <div className="row-wrap">
               <button
@@ -335,12 +380,21 @@ export function EmergencyPanel({
         </h2>
 
         <div className="diff-box">
-          <div className="eyebrow">Submitter EVM Window Status</div>
-          <p style={{ margin: "6px 0 0" }}>
-            {evmWindow
-              ? evmWindow.message
-              : "Connect QoreX or MetaMask to check whether your submitting account has an open EVM window."}
-          </p>
+          <div className="row-wrap" style={{ justifyContent: "space-between" }}>
+            <div>
+              <div className="eyebrow">Submitter EVM Window Status</div>
+              <p style={{ margin: "6px 0 0" }}>
+                {evmWindow
+                  ? evmWindow.message
+                  : "Connect QoreX to check whether your submitting account has an open EVM window."}
+              </p>
+            </div>
+            {qorex?.connected && evmWindow?.status === "closed" && onOpenWindowInQoreX && (
+              <button type="button" className="btn btn-primary" onClick={onOpenWindowInQoreX}>
+                Open EVM Window in QoreX
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="row-wrap" style={{ marginTop: 16 }}>
@@ -408,6 +462,7 @@ export function EmergencyPanel({
               min="0"
               value={withdrawAmt}
               onChange={(e) => setWithdrawAmt(e.target.value)}
+              placeholder="e.g. 0.1"
             />
           </div>
         </div>

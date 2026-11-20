@@ -16,11 +16,11 @@ interface Props {
 export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRefresh }: Props) {
   const [preset, setPreset] = useState<"cautious" | "standard" | "custom">("custom");
   const [qorEnabled, setQorEnabled] = useState(true);
-  const [qorMaxTx, setQorMaxTx] = useState("0.1");
-  const [qorDaily, setQorDaily] = useState("0.3");
+  const [qorMaxTx, setQorMaxTx] = useState("");
+  const [qorDaily, setQorDaily] = useState("");
   const [fusdEnabled, setFusdEnabled] = useState(true);
-  const [fusdMaxTx, setFusdMaxTx] = useState("1");
-  const [fusdDaily, setFusdDaily] = useState("3");
+  const [fusdMaxTx, setFusdMaxTx] = useState("");
+  const [fusdDaily, setFusdDaily] = useState("");
   const [requirePqc, setRequirePqc] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -29,11 +29,7 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
   useEffect(() => {
     if (!vault) return;
     setQorEnabled(vault.qorLimit.enabled);
-    setQorMaxTx(formatEther(vault.qorLimit.maxTxValue));
-    setQorDaily(formatEther(vault.qorLimit.epochLimit));
     setFusdEnabled(vault.fusdLimit.enabled);
-    setFusdMaxTx(formatUnits(vault.fusdLimit.maxTxValue, vault.fusdDecimals));
-    setFusdDaily(formatUnits(vault.fusdLimit.epochLimit, vault.fusdDecimals));
     setRequirePqc(vault.requireRecipientPqc);
   }, [vault]);
 
@@ -67,11 +63,37 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
     }
   };
 
+  const curQorMaxTx = formatEther(vault.qorLimit.maxTxValue);
+  const curQorDaily = formatEther(vault.qorLimit.epochLimit);
+  const curFusdMaxTx = formatUnits(vault.fusdLimit.maxTxValue, vault.fusdDecimals);
+  const curFusdDaily = formatUnits(vault.fusdLimit.epochLimit, vault.fusdDecimals);
+
+  const effQorMaxTx = qorMaxTx || curQorMaxTx;
+  const effQorDaily = qorDaily || curQorDaily;
+  const effFusdMaxTx = fusdMaxTx || curFusdMaxTx;
+  const effFusdDaily = fusdDaily || curFusdDaily;
+
+  const keyMatchesVault =
+    !unlockedSigner || unlockedSigner.backup.keyHash.toLowerCase() === vault.sovereignKeyHash.toLowerCase();
+
   const handleSaveAsset = async (assetKind: "QOR" | "fUSD") => {
     setErr(null);
     setTxHash(null);
     if (!unlockedSigner) {
       setErr("Unlock your Lattice key first to sign allowance changes.");
+      return;
+    }
+    if (!keyMatchesVault) {
+      setErr(
+        "Your unlocked Lattice Key does not own this vault. Deploy your own vault below or import this vault's .lwkey.json backup.",
+      );
+      return;
+    }
+    const maxVal = assetKind === "QOR" ? parseEther(effQorMaxTx || "0") : parseUnits(effFusdMaxTx || "0", vault.fusdDecimals);
+    const dayVal = assetKind === "QOR" ? parseEther(effQorDaily || "0") : parseUnits(effFusdDaily || "0", vault.fusdDecimals);
+    const isEnabled = assetKind === "QOR" ? qorEnabled : fusdEnabled;
+    if (isEnabled && maxVal > dayVal) {
+      setErr(`Max per payment cannot exceed the daily limit for ${assetKind}.`);
       return;
     }
     setBusy(true);
@@ -81,14 +103,14 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
           ? {
               asset: ZERO_ADDRESS,
               enabled: qorEnabled,
-              maxTxValue: parseEther(qorMaxTx || "0"),
-              epochLimit: parseEther(qorDaily || "0"),
+              maxTxValue: maxVal,
+              epochLimit: dayVal,
             }
           : {
               asset: FUSD_ADDRESS,
               enabled: fusdEnabled,
-              maxTxValue: parseUnits(fusdMaxTx || "0", vault.fusdDecimals),
-              epochLimit: parseUnits(fusdDaily || "0", vault.fusdDecimals),
+              maxTxValue: maxVal,
+              epochLimit: dayVal,
             };
       const coder = AbiCoder.defaultAbiCoder();
       const encoded = coder.encode(["tuple(address asset,bool enabled,uint256 maxTxValue,uint256 epochLimit)"], [u]);
@@ -115,6 +137,12 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
     setTxHash(null);
     if (!unlockedSigner) {
       setErr("Unlock your Lattice key first.");
+      return;
+    }
+    if (!keyMatchesVault) {
+      setErr(
+        "Your unlocked Lattice Key does not own this vault. Deploy your own vault below or import this vault's .lwkey.json backup.",
+      );
       return;
     }
     setBusy(true);
@@ -162,6 +190,13 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
           <strong>Daily limit</strong>: the 24-hour window starts at the first payment.
         </span>
       </p>
+
+      {unlockedSigner && !keyMatchesVault && (
+        <div className="alert alert-caution" role="note">
+          <strong>Different owner key:</strong> Your unlocked Lattice Key does not own this vault. To test saving
+          policy changes with your browser key, expand <strong>Deploy Your Own Isolated Vault</strong> below.
+        </div>
+      )}
 
       {err && (
         <div className="alert alert-danger" role="alert">
@@ -217,13 +252,13 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
             <span>Allow QOR payments</span>
           </label>
           <div className="field">
-            <label htmlFor="al-qor-tx">Max per payment (QOR): {qorMaxTx}</label>
+            <label htmlFor="al-qor-tx">Max per payment (QOR): {effQorMaxTx}</label>
             <input
               type="range"
               min="0.01"
               max="10"
               step="0.01"
-              value={Number(qorMaxTx) || 0.1}
+              value={Number(effQorMaxTx) || 0.1}
               onChange={(e) => {
                 setPreset("custom");
                 setQorMaxTx(e.target.value);
@@ -235,6 +270,7 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
               type="number"
               step="0.01"
               value={qorMaxTx}
+              placeholder={curQorMaxTx}
               onChange={(e) => {
                 setPreset("custom");
                 setQorMaxTx(e.target.value);
@@ -242,13 +278,13 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
             />
           </div>
           <div className="field">
-            <label htmlFor="al-qor-day">Daily limit (QOR): {qorDaily}</label>
+            <label htmlFor="al-qor-day">Daily limit (QOR): {effQorDaily}</label>
             <input
               type="range"
               min="0.05"
               max="30"
               step="0.05"
-              value={Number(qorDaily) || 0.3}
+              value={Number(effQorDaily) || 0.3}
               onChange={(e) => {
                 setPreset("custom");
                 setQorDaily(e.target.value);
@@ -260,6 +296,7 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
               type="number"
               step="0.01"
               value={qorDaily}
+              placeholder={curQorDaily}
               onChange={(e) => {
                 setPreset("custom");
                 setQorDaily(e.target.value);
@@ -268,11 +305,9 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
           </div>
           <p className="muted tabular">
             <strong>Before:</strong>{" "}
-            {vault.qorLimit.enabled
-              ? `${formatEther(vault.qorLimit.maxTxValue)} / ${formatEther(vault.qorLimit.epochLimit)} QOR`
-              : "Disabled"}
+            {vault.qorLimit.enabled ? `${curQorMaxTx} / ${curQorDaily} QOR` : "Disabled"}
             <br />
-            <strong>After:</strong> {qorEnabled ? `${qorMaxTx} / ${qorDaily} QOR` : "Disabled"}
+            <strong>After:</strong> {qorEnabled ? `${effQorMaxTx} / ${effQorDaily} QOR` : "Disabled"}
           </p>
           <button
             type="button"
@@ -299,13 +334,13 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
             <span>Allow fUSD payments</span>
           </label>
           <div className="field">
-            <label htmlFor="al-fusd-tx">Max per payment (fUSD): {fusdMaxTx}</label>
+            <label htmlFor="al-fusd-tx">Max per payment (fUSD): {effFusdMaxTx}</label>
             <input
               type="range"
               min="0.5"
               max="100"
               step="0.5"
-              value={Number(fusdMaxTx) || 1}
+              value={Number(effFusdMaxTx) || 1}
               onChange={(e) => {
                 setPreset("custom");
                 setFusdMaxTx(e.target.value);
@@ -317,6 +352,7 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
               type="number"
               step="0.1"
               value={fusdMaxTx}
+              placeholder={curFusdMaxTx}
               onChange={(e) => {
                 setPreset("custom");
                 setFusdMaxTx(e.target.value);
@@ -324,13 +360,13 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
             />
           </div>
           <div className="field">
-            <label htmlFor="al-fusd-day">Daily limit (fUSD): {fusdDaily}</label>
+            <label htmlFor="al-fusd-day">Daily limit (fUSD): {effFusdDaily}</label>
             <input
               type="range"
               min="1"
               max="300"
               step="1"
-              value={Number(fusdDaily) || 3}
+              value={Number(effFusdDaily) || 3}
               onChange={(e) => {
                 setPreset("custom");
                 setFusdDaily(e.target.value);
@@ -342,6 +378,7 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
               type="number"
               step="0.1"
               value={fusdDaily}
+              placeholder={curFusdDaily}
               onChange={(e) => {
                 setPreset("custom");
                 setFusdDaily(e.target.value);
@@ -350,11 +387,9 @@ export function AllowancesPanel({ vault, qorex, unlockedSigner, relayerUrl, onRe
           </div>
           <p className="muted tabular">
             <strong>Before:</strong>{" "}
-            {vault.fusdLimit.enabled
-              ? `${formatUnits(vault.fusdLimit.maxTxValue, vault.fusdDecimals)} / ${formatUnits(vault.fusdLimit.epochLimit, vault.fusdDecimals)} fUSD`
-              : "Disabled"}
+            {vault.fusdLimit.enabled ? `${curFusdMaxTx} / ${curFusdDaily} fUSD` : "Disabled"}
             <br />
-            <strong>After:</strong> {fusdEnabled ? `${fusdMaxTx} / ${fusdDaily} fUSD` : "Disabled"}
+            <strong>After:</strong> {fusdEnabled ? `${effFusdMaxTx} / ${effFusdDaily} fUSD` : "Disabled"}
           </p>
           <button
             type="button"

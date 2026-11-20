@@ -4,6 +4,7 @@ import {
   type EthBroadcaster,
   type UnifiedAccount,
   abstractaccount,
+  closeEvmWindowMsg,
   decodeAuthenticatorExecutions,
   derivePqcLegacy,
   deriveUnifiedAccount,
@@ -29,11 +30,14 @@ export const DEFAULT_EVM_RPC = process.env.QOR_RPC_URL?.trim() || "https://evm-t
 export const DEFAULT_COSMOS_CHAIN_ID = process.env.QOR_COSMOS_CHAIN_ID?.trim() || "qorechain-diana";
 export const LIVE_VAULT_ADDRESS =
   process.env.VAULT_ADDRESS?.trim() || "0x9697a96058555b3A0C50b2338440C84B927caB29";
+export const FUSD_BANK_DENOM = "erc20:0x97143B771D34ddb9130b807b135Ae675A5a963CA";
 
 export interface AbstractAccountRuleConfig {
   id: string;
   perTxLimitUqor: string;
   dailyLimitUqor: string;
+  perTxLimitFusd: string;
+  dailyLimitFusd: string;
   allowedEvmCalls: string[];
   expiryUnix: number;
   label: string;
@@ -43,8 +47,10 @@ export const DEFAULT_AA_RULE_CONFIG: AbstractAccountRuleConfig = {
   id: "latticeward-vault-only",
   perTxLimitUqor: "100000", // 0.1 QOR (6 decimals in uqor)
   dailyLimitUqor: "300000", // 0.3 QOR (6 decimals in uqor)
+  perTxLimitFusd: "1000000", // 1.0 fUSD (6 decimals in bank denom)
+  dailyLimitFusd: "3000000", // 3.0 fUSD (6 decimals in bank denom)
   allowedEvmCalls: [LIVE_VAULT_ADDRESS],
-  expiryUnix: Math.floor(Date.now() / 1000) + 86400, // 24h TTL
+  expiryUnix: Math.floor(Date.now() / 1000) + 30 * 86400, // 30-day TTL (covers Dec 3-15 judging window)
   label: "latticeward-scoped-agent",
 };
 
@@ -216,13 +222,18 @@ export async function updateAbstractAccountSpendingRulesOnly(opts: {
         enabled: true,
         perTxLimit: cfg.perTxLimitUqor,
         dailyLimit: cfg.dailyLimitUqor,
-        allowedDenoms: ["uqor"],
+        allowedDenoms: ["uqor", FUSD_BANK_DENOM],
         allowedEvmCalls: cfg.allowedEvmCalls,
         denomLimits: [
           {
             denom: "uqor",
             perTxLimit: cfg.perTxLimitUqor,
             dailyLimit: cfg.dailyLimitUqor,
+          },
+          {
+            denom: FUSD_BANK_DENOM,
+            perTxLimit: cfg.perTxLimitFusd,
+            dailyLimit: cfg.dailyLimitFusd,
           },
         ],
       },
@@ -304,13 +315,18 @@ export async function setupAbstractAccountAndRules(opts: {
       enabled: true,
       perTxLimit: cfg.perTxLimitUqor,
       dailyLimit: cfg.dailyLimitUqor,
-      allowedDenoms: ["uqor"],
+      allowedDenoms: ["uqor", FUSD_BANK_DENOM],
       allowedEvmCalls: cfg.allowedEvmCalls,
       denomLimits: [
         {
           denom: "uqor",
           perTxLimit: cfg.perTxLimitUqor,
           dailyLimit: cfg.dailyLimitUqor,
+        },
+        {
+          denom: FUSD_BANK_DENOM,
+          perTxLimit: cfg.perTxLimitFusd,
+          dailyLimit: cfg.dailyLimitFusd,
         },
       ],
     },
@@ -478,4 +494,63 @@ export async function revokeAgentAuthenticator(opts: {
   );
 }
 
-export { abstractaccount, fetchAuthenticators, fetchSpendingRules, fetchAuthNonce };
+export async function closeAccountEvmWindow(opts: {
+  ownerAccount: UnifiedAccount;
+  restUrl?: string;
+  chainId?: string;
+}) {
+  const restUrl = opts.restUrl ?? DEFAULT_REST_URL;
+  const chainId = opts.chainId ?? DEFAULT_COSMOS_CHAIN_ID;
+  const msg = closeEvmWindowMsg(opts.ownerAccount.cosmos);
+  return broadcastHybridCosmosMsgs(
+    opts.ownerAccount,
+    [msg],
+    "LatticeWard x/pqc MsgCloseEVMWindow (close retired drill account EVM window)",
+    "250000",
+    "25000",
+    restUrl,
+    chainId,
+  );
+}
+
+export async function disableAbstractAccountRulesAndCloseWindow(opts: {
+  ownerAccount: UnifiedAccount;
+  restUrl?: string;
+  chainId?: string;
+}) {
+  const restUrl = opts.restUrl ?? DEFAULT_REST_URL;
+  const chainId = opts.chainId ?? DEFAULT_COSMOS_CHAIN_ID;
+  const ruleMsg = abstractaccount.updateSpendingRules({
+    owner: opts.ownerAccount.cosmos,
+    accountAddress: opts.ownerAccount.cosmos,
+    rules: [
+      {
+        id: "drill-account-retired-locked",
+        enabled: true,
+        perTxLimit: "1",
+        dailyLimit: "1",
+        allowedDenoms: ["uqor"],
+        allowedEvmCalls: [LIVE_VAULT_ADDRESS],
+        denomLimits: [
+          {
+            denom: "uqor",
+            perTxLimit: "1",
+            dailyLimit: "1",
+          },
+        ],
+      },
+    ],
+  });
+  const closeMsg = closeEvmWindowMsg(opts.ownerAccount.cosmos);
+  return broadcastHybridCosmosMsgs(
+    opts.ownerAccount,
+    [ruleMsg, closeMsg],
+    "LatticeWard retire drill account: lock spending rule to 1 uqor & close EVM window",
+    "450000",
+    "45000",
+    restUrl,
+    chainId,
+  );
+}
+
+export { abstractaccount, closeEvmWindowMsg, fetchAuthenticators, fetchSpendingRules, fetchAuthNonce };

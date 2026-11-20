@@ -2,25 +2,27 @@
   "network": "qorechain-diana",
   "chainId": 9800,
   "vaultAddress": "0x9697a96058555b3A0C50b2338440C84B927caB29",
-  "verifiedAt": "2026-11-20T06:11:42.558Z",
+  "verifiedAt": "2026-11-20T06:42:25.374Z",
   "allPassed": true,
   "deployerAbstractAccountSetup": {
     "ownerCosmos": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea",
     "ownerEvm": "0x480261F742b3CfA5f1659da6FAd089BDB6CFD0B3",
     "agentEvm": "0xc40352672Ac28fD9DE498AbE2c3CedF9367FDE04",
     "pubkeyHex": "0xc40352672ac28fd9de498abe2c3cedf9367fde04",
-    "txHash": "499C80BD15C0A0DCEE2721BD606CE803C90890BB9367767D30F5B93A4D22A365",
-    "height": 10416953,
+    "txHash": "A374DDC5C787BFAD914F9870F9318DB321C8580EBCC8CA0715505B239D9A9388",
+    "height": 10418265,
     "code": 0,
     "rawLog": "",
     "ruleConfig": {
       "id": "latticeward-vault-only",
       "perTxLimitUqor": "100000",
       "dailyLimitUqor": "300000",
+      "perTxLimitFusd": "1000000",
+      "dailyLimitFusd": "3000000",
       "allowedEvmCalls": [
         "0x9697a96058555b3A0C50b2338440C84B927caB29"
       ],
-      "expiryUnix": 1795241420,
+      "expiryUnix": 1797748916,
       "label": "latticeward-scoped-agent"
     },
     "onChainRules": {
@@ -30,7 +32,8 @@
           "dailyLimit": "300000",
           "perTxLimit": "100000",
           "allowedDenoms": [
-            "uqor"
+            "uqor",
+            "erc20:0x97143B771D34ddb9130b807b135Ae675A5a963CA"
           ],
           "enabled": true,
           "allowedEvmCalls": [
@@ -41,6 +44,11 @@
               "denom": "uqor",
               "perTxLimit": "100000",
               "dailyLimit": "300000"
+            },
+            {
+              "denom": "erc20:0x97143B771D34ddb9130b807b135Ae675A5a963CA",
+              "perTxLimit": "1000000",
+              "dailyLimit": "3000000"
             }
           ]
         }
@@ -55,56 +63,22 @@
           "evm",
           "send"
         ],
-        "expiryUnix": "1795241420",
+        "expiryUnix": "1797748916",
         "label": "latticeward-scoped-agent",
-        "createdAtUnix": "1795155022",
+        "createdAtUnix": "1795156917",
         "revoked": false,
         "hasSpendRule": false
       }
     ],
-    "authNonce": "0"
+    "authNonce": "2"
   },
   "drillAbstractAccountSetup": {
     "ownerCosmos": "qor166y3unhk00s8kh0fwq7ucn8ndm6dzk4w0gq3kx",
     "ownerEvm": "0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae",
-    "txHash": "2C9A0661A4CE89EF9EF40C7C112660B6B4774EC5E60BEA33F03AEDBE8FCC9E92",
-    "height": 10416963,
-    "code": 0,
-    "rawLog": "",
-    "ruleConfig": {
-      "id": "latticeward-vault-only",
-      "perTxLimitUqor": "100000",
-      "dailyLimitUqor": "300000",
-      "allowedEvmCalls": [
-        "0x9697a96058555b3A0C50b2338440C84B927caB29"
-      ],
-      "expiryUnix": 1795241436,
-      "label": "latticeward-scoped-agent"
-    },
-    "onChainRules": {
-      "rules": [
-        {
-          "id": "latticeward-vault-only",
-          "dailyLimit": "300000",
-          "perTxLimit": "100000",
-          "allowedDenoms": [
-            "uqor"
-          ],
-          "enabled": true,
-          "allowedEvmCalls": [
-            "0x9697a96058555b3A0C50b2338440C84B927caB29"
-          ],
-          "denomLimits": [
-            {
-              "denom": "uqor",
-              "perTxLimit": "100000",
-              "dailyLimit": "300000"
-            }
-          ]
-        }
-      ],
-      "authenticatorRules": []
-    }
+    "windowClosed": true,
+    "txHash": "023BB99C0C6839A32C0A34E04B5A7E70B426E522358189878F92800E6DDE57D4",
+    "height": 10418268,
+    "code": 0
   },
   "finalOnChainSpendingRules": {
     "rules": [
@@ -113,7 +87,8 @@
         "dailyLimit": "300000",
         "perTxLimit": "100000",
         "allowedDenoms": [
-          "uqor"
+          "uqor",
+          "erc20:0x97143B771D34ddb9130b807b135Ae675A5a963CA"
         ],
         "enabled": true,
         "allowedEvmCalls": [
@@ -124,6 +99,11 @@
             "denom": "uqor",
             "perTxLimit": "100000",
             "dailyLimit": "300000"
+          },
+          {
+            "denom": "erc20:0x97143B771D34ddb9130b807b135Ae675A5a963CA",
+            "perTxLimit": "1000000",
+            "dailyLimit": "3000000"
           }
         ]
       }
@@ -138,9 +118,9 @@
         "evm",
         "send"
       ],
-      "expiryUnix": "1795241496",
+      "expiryUnix": "1797748941",
       "label": "latticeward-scoped-agent",
-      "createdAtUnix": "1795155096",
+      "createdAtUnix": "1795156942",
       "revoked": false,
       "hasSpendRule": false
     }
@@ -150,9 +130,9 @@
       "id": "test-1-in-policy-execution",
       "passed": true,
       "verdict": {
-        "index": 0,
-        "timestamp": "2026-11-20T06:11:04.109Z",
-        "proposalId": "0x2049ddb352209c08cf1e1b0fcbcd954059a9f0b20c03b12ac27cbaa50349ae25",
+        "index": 4,
+        "timestamp": "2026-11-20T06:42:09.108Z",
+        "proposalId": "0x50619e87f56c6f2c674f60d14a26d6bc6e027973fd9f88434c4ef18a9a1bd674",
         "agentAddress": "0xc40352672Ac28fD9DE498AbE2c3CedF9367FDE04",
         "targetContract": "0x9697a96058555b3A0C50b2338440C84B927caB29",
         "recipientAddress": "0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae",
@@ -167,17 +147,17 @@
           "recipientQuantumSafe0x0A02": true,
           "signatureVerified": true
         },
-        "txHash": "88466A5774F01900165F26A4221671498B59231343D85853829BF1698532FB29",
-        "prevHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-        "entryHash": "0x3f3d6c42c68d7b9e1079171947f5040d4eb416ce92db3bb13f6be9c92111260a"
+        "txHash": "D3AB9E1E52052BF0AB2D5A559A2EC9AB40D3563F05B5A8B867404D79D6D17E7A",
+        "prevHash": "0xe7fa57aaaf131372cf9ece380b4554fd82a13c563fdf6d65bf0c3acf1e0209c5",
+        "entryHash": "0x19b2be9aa2b1ac1c1ef4fc7afaf6f81d978996231a8f2895c2c3299258102954"
       },
       "aaExecution": {
-        "txHash": "88466A5774F01900165F26A4221671498B59231343D85853829BF1698532FB29",
-        "height": 10416970,
+        "txHash": "D3AB9E1E52052BF0AB2D5A559A2EC9AB40D3563F05B5A8B867404D79D6D17E7A",
+        "height": 10418271,
         "code": 0,
         "rawLog": "",
-        "nonceUsed": "0",
-        "digestHex": "0x0xc9045ab3753a33703ade0e56465fa3fd6a1f36461c88ee44563cc57df0d1c528",
+        "nonceUsed": "2",
+        "digestHex": "0x0x69f7646abda87a581ec17103c0f4f42b49f1cc644eade363a83a5287566b0ce4",
         "signatureLen": 65,
         "executionResult": null,
         "events": [
@@ -331,7 +311,7 @@
             "attributes": [
               {
                 "key": "acc_seq",
-                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea/23",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea/30",
                 "index": true
               }
             ]
@@ -341,7 +321,7 @@
             "attributes": [
               {
                 "key": "signature",
-                "value": "L8QCPXVM7B3pFQs582yj2D2H+qclyZQ2seCW9VAszYY36b0atTCb8LeipdLfvJN99OF2ulpEiTRdtMjValQ1hw==",
+                "value": "7Tz/ult/vwy8bjPVQkAJETCDIoGHdJbrB9vtGO0kS6BidaI5W7MmIaZCvSJaRSrNylcrNHb47XgQ7LxcGZ+i4g==",
                 "index": true
               }
             ]
@@ -386,7 +366,7 @@
               },
               {
                 "key": "nonce",
-                "value": "0",
+                "value": "2",
                 "index": true
               },
               {
@@ -408,9 +388,9 @@
       "id": "test-2a-value-cap-refusal",
       "passed": true,
       "verdict": {
-        "index": 1,
-        "timestamp": "2026-11-20T06:11:05.706Z",
-        "proposalId": "0xba63b48e574e630243bbdee409ed3b000744b00bcdd6138945fd240ab9a9f198",
+        "index": 5,
+        "timestamp": "2026-11-20T06:42:09.678Z",
+        "proposalId": "0x7a25289f9096506c1268b40ac5004d9f5c0f68b808ef78c0d56b140a54434b4b",
         "agentAddress": "0xc40352672Ac28fD9DE498AbE2c3CedF9367FDE04",
         "targetContract": "0x9697a96058555b3A0C50b2338440C84B927caB29",
         "recipientAddress": "0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae",
@@ -426,8 +406,8 @@
           "signatureVerified": true
         },
         "txHash": null,
-        "prevHash": "0x3f3d6c42c68d7b9e1079171947f5040d4eb416ce92db3bb13f6be9c92111260a",
-        "entryHash": "0x16f778879ad758b00e335c2ac1f018faa754fd192ad6d6643ecde20c0e3f3bdc"
+        "prevHash": "0x19b2be9aa2b1ac1c1ef4fc7afaf6f81d978996231a8f2895c2c3299258102954",
+        "entryHash": "0x8babab616dfa6d64ebf0219d2029fe9275cf7f3e7be2683faa8383dbdfe3c6d1"
       },
       "onChainRevert": "ExceedsScopedMaxTxValue(1000000000000000000, 100000000000000000)"
     },
@@ -435,15 +415,15 @@
       "id": "test-2b-duration-expiry-refusal",
       "passed": true,
       "verdict": {
-        "index": 2,
-        "timestamp": "2026-11-20T06:11:08.082Z",
-        "proposalId": "0x356959f3a3b29662a67fee6efbd383769e37f0e80d42cb1a76e699f35aae4612",
+        "index": 6,
+        "timestamp": "2026-11-20T06:42:10.265Z",
+        "proposalId": "0x4f30fef99ef23fa8e4c1213c818d610ad11cd3b9e2ffa3743e5144dd2319e266",
         "agentAddress": "0xc40352672Ac28fD9DE498AbE2c3CedF9367FDE04",
         "targetContract": "0x9697a96058555b3A0C50b2338440C84B927caB29",
         "recipientAddress": "0xD6891e4Ef67be07b5DE9703Dcc4cf36eF4D15aae",
         "valueUqor": "1000",
         "verdict": "DENY",
-        "rejectionReason": "Proposal deadline (1795154465) or authenticator window (1795241415) expired at 1795155065",
+        "rejectionReason": "Proposal deadline (1795156329) or authenticator window (1797748913) expired at 1795156929",
         "checks": {
           "txAndNonceValid": true,
           "valueWithinCap": true,
@@ -453,8 +433,8 @@
           "signatureVerified": true
         },
         "txHash": null,
-        "prevHash": "0x16f778879ad758b00e335c2ac1f018faa754fd192ad6d6643ecde20c0e3f3bdc",
-        "entryHash": "0xd1a8cb477b077b4b85a9176a00c2f2b3d4e9d068cc3c6ad0864700406c569ca5"
+        "prevHash": "0x8babab616dfa6d64ebf0219d2029fe9275cf7f3e7be2683faa8383dbdfe3c6d1",
+        "entryHash": "0x95b9f5395813765e4335a963ec4e158618d6a05a2bdb986b017ed16ce094d5a3"
       },
       "onChainRevert": "IntentExpired"
     },
@@ -462,9 +442,9 @@
       "id": "test-2c-target-and-0x0A02-refusal",
       "passed": true,
       "verdict": {
-        "index": 3,
-        "timestamp": "2026-11-20T06:11:17.559Z",
-        "proposalId": "0x9dbe370014d5fa4bc56349fae8c3eae4bdbfaf3a4fb9880edf1353046ece3915",
+        "index": 7,
+        "timestamp": "2026-11-20T06:42:14.674Z",
+        "proposalId": "0xb5fdf88531528a596c42ad65d9c1d1cbb4851bdc54460dd6753d3574d7472e15",
         "agentAddress": "0xc40352672Ac28fD9DE498AbE2c3CedF9367FDE04",
         "targetContract": "0x000000000000000000000000000000000000dEaD",
         "recipientAddress": "0x000000000000000000000000000000000000dEaD",
@@ -479,17 +459,17 @@
           "recipientQuantumSafe0x0A02": false,
           "signatureVerified": true
         },
-        "txHash": "CAEBBCFD7E7C6CF7A2F07359D09C9F212C846EA4A0E4699DBE25C30645B83536",
-        "prevHash": "0xd1a8cb477b077b4b85a9176a00c2f2b3d4e9d068cc3c6ad0864700406c569ca5",
-        "entryHash": "0xe7fa57aaaf131372cf9ece380b4554fd82a13c563fdf6d65bf0c3acf1e0209c5"
+        "txHash": "D3E876383E986279BB7AA2533E36FAC9ACB767C94F33D93D490DDD4CAD8EBA65",
+        "prevHash": "0x95b9f5395813765e4335a963ec4e158618d6a05a2bdb986b017ed16ce094d5a3",
+        "entryHash": "0x5d8055bf133f49dcd83f256e67b0294a46bb2200828430a1922dec97c20583fa"
       },
       "aaRejection": {
-        "txHash": "CAEBBCFD7E7C6CF7A2F07359D09C9F212C846EA4A0E4699DBE25C30645B83536",
-        "height": 10416987,
+        "txHash": "D3E876383E986279BB7AA2533E36FAC9ACB767C94F33D93D490DDD4CAD8EBA65",
+        "height": 10418275,
         "code": 0,
         "rawLog": "",
-        "nonceUsed": "1",
-        "digestHex": "0x0x018db510dfe333872c91b95785a9b021c6b52b8c08892bdd1709acbc10818daa",
+        "nonceUsed": "3",
+        "digestHex": "0x0x3121824b1adef250aaab5c5a0db07cc3e5b04717e64ee14e1a5b97257d85016a",
         "signatureLen": 65,
         "executionResult": null,
         "events": [
@@ -643,7 +623,7 @@
             "attributes": [
               {
                 "key": "acc_seq",
-                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea/24",
+                "value": "qor1fqpxra6zk086tut9nkn045yfhkmvl59nlnegea/31",
                 "index": true
               }
             ]
@@ -653,7 +633,7 @@
             "attributes": [
               {
                 "key": "signature",
-                "value": "LPc0TbU94PPH739KMMnG3LFDIbyFWMemeoZ2IO2ZG81DFSa/Hs1Xzt0yqHTMVxRUuPwbVD8lKkp4A310ZLDiMA==",
+                "value": "LUPugwzPMVUCoydEogEpFw22mphvi8fp0Y7/Pjk9pZ1sHSF1hIyEpyOUMH3jGUq2dEM/VjAkOviEAIj/pN3pHw==",
                 "index": true
               }
             ]
@@ -698,7 +678,7 @@
               },
               {
                 "key": "nonce",
-                "value": "1",
+                "value": "3",
                 "index": true
               },
               {
@@ -720,20 +700,20 @@
     {
       "id": "test-3-authenticator-revocation-and-restore",
       "passed": true,
-      "revokeTxHash": "F9AAA41814CFCB3840DD34D21ECA38DE441A5C353ABE14A4511011DEE2521B19",
-      "revokeBlock": 10416992,
+      "revokeTxHash": "28084ACC143F4E20BAF992CD68D3AB2E31A066944073F7BE1581F740BB361D11",
+      "revokeBlock": 10418277,
       "postRevokeAttempt": {
         "txHash": null,
         "height": 0,
         "code": -1,
-        "rawLog": "permission denied - the authenticator lacks the permission this message requires (check the permission_schema) (failed to execute message; message index: 0: linked key is unbound or revoked: authenticator not permitted for this action) (tx DCD3B2B85A2A9A38C940CD884383586BFAEFC18CAC6C7C46D5D41097FCC1CC28)",
+        "rawLog": "permission denied - the authenticator lacks the permission this message requires (check the permission_schema) (failed to execute message; message index: 0: linked key is unbound or revoked: authenticator not permitted for this action) (tx 3FDB9D39AE65372B953F784D602D006A8BD69067044FC35CB67115C71ED7CA80)",
         "executionResult": {
           "success": false,
-          "reason": "permission denied - the authenticator lacks the permission this message requires (check the permission_schema) (failed to execute message; message index: 0: linked key is unbound or revoked: authenticator not permitted for this action) (tx DCD3B2B85A2A9A38C940CD884383586BFAEFC18CAC6C7C46D5D41097FCC1CC28)"
+          "reason": "permission denied - the authenticator lacks the permission this message requires (check the permission_schema) (failed to execute message; message index: 0: linked key is unbound or revoked: authenticator not permitted for this action) (tx 3FDB9D39AE65372B953F784D602D006A8BD69067044FC35CB67115C71ED7CA80)"
         }
       },
-      "restoreTxHash": "C58F640A324A10D889D5E75FA04F8605F5D71907B120CD29C3E135BCC6C899B0",
-      "restoreBlock": 10417005
+      "restoreTxHash": "C5482CDF1F73675F30A683B738C111C105FD6F3856B812E4C529C31A8E349329",
+      "restoreBlock": 10418282
     }
   ]
 }

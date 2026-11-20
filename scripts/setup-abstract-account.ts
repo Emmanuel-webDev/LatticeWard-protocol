@@ -11,9 +11,9 @@ import { resolve } from "node:path";
 import {
   DEFAULT_AA_RULE_CONFIG,
   LIVE_VAULT_ADDRESS,
+  disableAbstractAccountRulesAndCloseWindow,
   loadHybridOwnerAccount,
   setupAbstractAccountAndRules,
-  updateAbstractAccountSpendingRulesOnly,
 } from "../src/abstractAccount.js";
 
 function jsonReplacer(_key: string, value: unknown): unknown {
@@ -51,19 +51,14 @@ async function main() {
             ruleConfig: {
               ...DEFAULT_AA_RULE_CONFIG,
               allowedEvmCalls: [LIVE_VAULT_ADDRESS],
-              expiryUnix: Math.floor(Date.now() / 1000) + 86400,
+              expiryUnix: Math.floor(Date.now() / 1000) + 30 * 86400, // 30-day TTL
             },
           })
-        : await updateAbstractAccountSpendingRulesOnly({
+        : await disableAbstractAccountRulesAndCloseWindow({
             ownerAccount: owner,
-            ruleConfig: {
-              ...DEFAULT_AA_RULE_CONFIG,
-              allowedEvmCalls: [LIVE_VAULT_ADDRESS],
-              expiryUnix: Math.floor(Date.now() / 1000) + 86400,
-            },
           });
     console.log(
-      `[${role}] Committed in block ${res.height} | txHash=${res.txHash} | code=${res.code}`,
+      `[${role}] Committed in block ${res.height ?? 0} | txHash=${"txHash" in res ? res.txHash : res.transactionHash} | code=${res.code}`,
     );
     results.push({ role, ...res });
   }

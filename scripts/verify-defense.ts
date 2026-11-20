@@ -27,13 +27,13 @@ import { getProvider } from "../packages/agent-mcp/src/config.js";
 import {
   DEFAULT_AA_RULE_CONFIG,
   LIVE_VAULT_ADDRESS,
+  disableAbstractAccountRulesAndCloseWindow,
   executeAuthenticatedEvmViaAbstractAccount,
   fetchAuthenticators,
   fetchSpendingRules,
   loadHybridOwnerAccount,
   revokeAgentAuthenticator,
   setupAbstractAccountAndRules,
-  updateAbstractAccountSpendingRulesOnly,
 } from "../src/abstractAccount.js";
 import {
   appendVerdictLedger,
@@ -62,13 +62,14 @@ async function main() {
   const vault = new Contract(LIVE_VAULT_ADDRESS, VAULT_ABI, provider);
 
   console.log("=== LAYER 1 SETUP: Native x/abstractaccount Spending Rules & Authenticator ===");
+  const thirtyDaysExpiryUnix = Math.floor(Date.now() / 1000) + 30 * 86400;
   const aaSetup = await setupAbstractAccountAndRules({
     ownerAccount: owner,
     agentPrivateKeyHex: agentPk,
     ruleConfig: {
       ...DEFAULT_AA_RULE_CONFIG,
       allowedEvmCalls: [LIVE_VAULT_ADDRESS],
-      expiryUnix: Math.floor(Date.now() / 1000) + 86400,
+      expiryUnix: thirtyDaysExpiryUnix,
     },
   });
   console.log(`  DEPLOYER AA setup txHash=${aaSetup.txHash} (block ${aaSetup.height})`);
@@ -76,16 +77,18 @@ async function main() {
   let drillAaSetup: Record<string, unknown> | null = null;
   if (drillMnemonic && drillMnemonic.split(/\s+/).length >= 12) {
     const drillOwner = await loadHybridOwnerAccount(drillMnemonic, process.env.DRILL_PQC_RECOVERY_CODE);
-    const dRes = await updateAbstractAccountSpendingRulesOnly({
+    const dRes = await disableAbstractAccountRulesAndCloseWindow({
       ownerAccount: drillOwner,
-      ruleConfig: {
-        ...DEFAULT_AA_RULE_CONFIG,
-        allowedEvmCalls: [LIVE_VAULT_ADDRESS],
-        expiryUnix: Math.floor(Date.now() / 1000) + 86400,
-      },
     });
-    console.log(`  DRILL_ACCOUNT AA spending rules txHash=${dRes.txHash} (block ${dRes.height})`);
-    drillAaSetup = dRes;
+    console.log(`  DRILL_ACCOUNT retired & EVM window closed txHash=${dRes.transactionHash} (block ${dRes.height})`);
+    drillAaSetup = {
+      ownerCosmos: drillOwner.cosmos,
+      ownerEvm: drillOwner.evm,
+      windowClosed: true,
+      txHash: dRes.transactionHash,
+      height: dRes.height ?? 0,
+      code: dRes.code,
+    };
   }
 
   // Ensure AGENT also has an open scoped EVM window if AGENT broadcasts directly on the EVM lane
@@ -264,14 +267,14 @@ async function main() {
     `  [PASS] Post-revocation execution blocked=${postRevokeBlocked} | reason=${postRevokeExec.executionResult?.reason || postRevokeExec.rawLog}`,
   );
 
-  // Restore clean linked authenticator state so the account remains active for demos
+  // Restore clean linked authenticator state (30-day TTL) so the account remains active through Dec 3-15 judging
   const restoreRes = await setupAbstractAccountAndRules({
     ownerAccount: owner,
     agentPrivateKeyHex: agentPk,
     ruleConfig: {
       ...DEFAULT_AA_RULE_CONFIG,
       allowedEvmCalls: [LIVE_VAULT_ADDRESS],
-      expiryUnix: Math.floor(Date.now() / 1000) + 86400,
+      expiryUnix: Math.floor(Date.now() / 1000) + 30 * 86400,
     },
   });
   console.log(`  Restored active authenticator in block ${restoreRes.height} | txHash=${restoreRes.txHash}`);

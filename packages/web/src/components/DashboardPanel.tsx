@@ -378,9 +378,11 @@ export function DashboardPanel({
 
         <p className="muted">
           Before any agent proposal reaches the EVM or <code>LatticeWardVault</code>, QoreChain&apos;s native{" "}
-          <code>x/abstractaccount</code> module enforces protocol-level <code>denom_limits</code>, a deny-by-default{" "}
-          <code>allowed_evm_calls</code> target allowlist, authenticator duration expiry, and EIP-191{" "}
-          <code>evmAuthSignBytesV2</code> authenticated messaging.
+          <code>x/abstractaccount</code> module enforces protocol-level <code>denom_limits</code> for both native{" "}
+          <code>uqor</code> and bank-coin <code>fUSD</code> (<code>erc20:0x9714...63CA</code>), while{" "}
+          <code>LatticeWardVault.assetLimits</code> enforces ERC-20 <code>fUSD</code> and native <code>QOR</code> caps
+          inside the EVM vault alongside a deny-by-default <code>allowed_evm_calls</code> target allowlist, 30-day
+          authenticator duration expiry, and EIP-191 <code>evmAuthSignBytesV2</code> authenticated messaging.
         </p>
 
         <div className="grid-3" style={{ marginTop: 12 }}>
@@ -390,13 +392,13 @@ export function DashboardPanel({
               <strong>Rule ID:</strong> <code>latticeward-vault-only</code>
             </div>
             <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Per-Tx Cap:</strong> <code>100,000 uqor</code> (0.1 QOR)
+              <strong>uqor Limits:</strong> <code>100,000 uqor/tx</code> (0.1 QOR) · <code>300,000 uqor/day</code> (0.3 QOR)
             </div>
             <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Daily Spend Cap:</strong> <code>300,000 uqor</code> (0.3 QOR)
+              <strong>Bank fUSD Limits:</strong> <code>1,000,000/tx</code> (1.0 fUSD) · <code>3,000,000/day</code> (3.0 fUSD)
             </div>
             <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Allowed Denoms:</strong> <code>uqor</code>
+              <strong>Vault ERC-20 fUSD:</strong> <code>1.0 fUSD/tx</code> · <code>3.0 fUSD/day</code> (via <code>assetLimits</code>)
             </div>
           </div>
 
@@ -411,54 +413,54 @@ export function DashboardPanel({
               <div className="mono muted">{vault.agentKey}</div>
             </div>
             <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Permissions:</strong> <code>[&quot;evm&quot;, &quot;send&quot;]</code> (24h scoped expiry)
+              <strong>Permissions:</strong> <code>[&quot;evm&quot;, &quot;send&quot;]</code> (30-day TTL through Dec 15)
             </div>
           </div>
 
           <div className="diff-box" style={{ margin: 0 }}>
             <div className="eyebrow">Live Testnet Proof Hashes (Chain ID 9800)</div>
             <div className="tabular" style={{ marginTop: 8 }}>
-              <strong>AA Rules &amp; Link:</strong>{" "}
+              <strong>AA Rules &amp; 30d Link:</strong>{" "}
               <a
                 className="mono"
-                href={explorerTxUrl("499C80BD15C0A0DCEE2721BD606CE803C90890BB9367767D30F5B93A4D22A365")}
+                href={explorerTxUrl("A374DDC5C787BFAD914F9870F9318DB321C8580EBCC8CA0715505B239D9A9388")}
                 target="_blank"
                 rel="noreferrer"
               >
-                499C80BD...A365
+                A374DDC5...9388
               </a>
             </div>
             <div className="tabular" style={{ marginTop: 4 }}>
-              <strong>Drill AA Rules:</strong>{" "}
+              <strong>Drill Window Closed:</strong>{" "}
               <a
                 className="mono"
-                href={explorerTxUrl("2C9A0661A4CE89EF9EF40C7C112660B6B4774EC5E60BEA33F03AEDBE8FCC9E92")}
+                href={explorerTxUrl("023BB99C0C6839A32C0A34E04B5A7E70B426E522358189878F92800E6DDE57D4")}
                 target="_blank"
                 rel="noreferrer"
               >
-                2C9A0661...E92
+                023BB99C...57D4
               </a>
             </div>
             <div className="tabular" style={{ marginTop: 4 }}>
               <strong>In-Policy MsgExecuteEVM:</strong>{" "}
               <a
                 className="mono"
-                href={explorerTxUrl("88466A5774F01900165F26A4221671498B59231343D85853829BF1698532FB29")}
+                href={explorerTxUrl("D3AB9E1E52052BF0AB2D5A559A2EC9AB40D3563F05B5A8B867404D79D6D17E7A")}
                 target="_blank"
                 rel="noreferrer"
               >
-                88466A57...FB29
+                D3AB9E1E...7E7A
               </a>
             </div>
             <div className="tabular" style={{ marginTop: 4 }}>
               <strong>Revoke / Restore Proof:</strong>{" "}
               <a
                 className="mono"
-                href={explorerTxUrl("F9AAA41814CFCB3840DD34D21ECA38DE441A5C353ABE14A4511011DEE2521B19")}
+                href={explorerTxUrl("28084ACC143F4E20BAF992CD68D3AB2E31A066944073F7BE1581F740BB361D11")}
                 target="_blank"
                 rel="noreferrer"
               >
-                F9AAA418...1B19
+                28084ACC...1D11
               </a>
             </div>
           </div>
@@ -469,15 +471,15 @@ export function DashboardPanel({
           <ul className="checklist" style={{ marginTop: 8 }}>
             <li className="check-item hairline-row">
               <div>
-                <span className="badge badge-safe">ALLOW #0</span>{" "}
+                <span className="badge badge-safe">ALLOW #4</span>{" "}
                 <strong className="tabular">1,000 uqor (0.001 QOR) → {vault.address.slice(0, 10)}...</strong>
                 <div className="muted mono" style={{ marginTop: 4 }}>
-                  entryHash: 0x3f3d6c42...1260a · All 6 checks passed (tx, value, duration, target, 0x0A02, EIP-191 sig)
+                  entryHash: 0x19b2be9a...02954 · All 6 checks passed (tx, value, duration, target, 0x0A02, EIP-191 sig)
                 </div>
               </div>
               <a
                 className="btn"
-                href={explorerTxUrl("88466A5774F01900165F26A4221671498B59231343D85853829BF1698532FB29")}
+                href={explorerTxUrl("D3AB9E1E52052BF0AB2D5A559A2EC9AB40D3563F05B5A8B867404D79D6D17E7A")}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -486,28 +488,28 @@ export function DashboardPanel({
             </li>
             <li className="check-item hairline-row">
               <div>
-                <span className="badge badge-danger">DENY #1</span>{" "}
+                <span className="badge badge-danger">DENY #5</span>{" "}
                 <strong className="tabular">1,000,000 uqor (1.0 QOR) → Value Cap Refusal</strong>
                 <div className="muted mono" style={{ marginTop: 4 }}>
-                  entryHash: 0x16f77887...3bdc · Blocked by x/abstractaccount perTxLimit (100,000 uqor) &amp; ExceedsScopedMaxTxValue
+                  entryHash: 0x8babab61...c6d1 · Blocked by x/abstractaccount perTxLimit (100,000 uqor) &amp; ExceedsScopedMaxTxValue
                 </div>
               </div>
             </li>
             <li className="check-item hairline-row">
               <div>
-                <span className="badge badge-danger">DENY #2</span>{" "}
+                <span className="badge badge-danger">DENY #6</span>{" "}
                 <strong className="tabular">1,000 uqor → Expired Duration Window Refusal</strong>
                 <div className="muted mono" style={{ marginTop: 4 }}>
-                  entryHash: 0xd1a8cb47...9ca5 · Blocked by deadline / window expiry check &amp; IntentExpired
+                  entryHash: 0x95b9f539...d5a3 · Blocked by deadline / window expiry check &amp; IntentExpired
                 </div>
               </div>
             </li>
             <li className="check-item hairline-row">
               <div>
-                <span className="badge badge-danger">DENY #3</span>{" "}
+                <span className="badge badge-danger">DENY #7</span>{" "}
                 <strong className="tabular">0x0000...dEaD → Target Allowlist &amp; 0x0A02 Firewall Refusal</strong>
                 <div className="muted mono" style={{ marginTop: 4 }}>
-                  entryHash: 0xe7fa57aa...09c5 · Denied by x/abstractaccount allowed_evm_calls &amp; RecipientNotQuantumSafe
+                  entryHash: 0x5d8055bf...83fa · Denied by x/abstractaccount allowed_evm_calls &amp; RecipientNotQuantumSafe
                 </div>
               </div>
             </li>

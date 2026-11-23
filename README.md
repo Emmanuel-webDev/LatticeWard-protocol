@@ -9,7 +9,7 @@ Network: QoreChain Diana testnet (`qorechain-diana`, EVM chain ID `9800`). **Tes
 
 | | |
 |---|---|
-| Live app | https://emmanuel-webdev.github.io/LatticeWard-protocol/ |
+| Live app | https://latticeward-protocol.onrender.com/ |
 | Demo video | https://youtu.be/9QmegHHu8jc |
 | Submission page | https://build.qorechain.io/p/latticeward |
 | Vault | [`0x9697a96058555b3A0C50b2338440C84B927caB29`](https://explore.qore.network/address/0x9697a96058555b3A0C50b2338440C84B927caB29) (`qor1j6t6jczc24dn5rzskgecgsxgfwf8e2efp7z6qp`) |
@@ -100,7 +100,7 @@ All results and hashes are saved in [`audits/onchain-proof.json`](audits/onchain
 
 ## Try it in 2 minutes (no wallet needed)
 
-1. Open the [live app](https://emmanuel-webdev.github.io/LatticeWard-protocol/), click **Open App**, and select **Preview Live Vault (Read-Only)**: live balances, daily caps, `0x0A02` firewall, and the **Session Window & Agent Payments** panel read straight from testnet.
+1. Open the [live app](https://latticeward-protocol.onrender.com/), click **Open App**, and select **Preview Live Vault (Read-Only)**: live balances, daily caps, `0x0A02` firewall, and the **Session Window & Agent Payments** panel read straight from testnet.
 2. Under **Test or Run an Agent Payment**, click *Valid Payout*, *Try Over-Spend*, and *Unprotected Wallet* → **Test Against Policy**. These are read-only `eth_call`s against the live vault.
 3. Open **Attack Lab → Run 4 Live Attack Simulations**: over-spend, non-quantum-safe recipient, and two leaked-key attacks. The error names come from the chain.
 4. Expand **Connect an AI Agent (MCP)** or **Protocol Proofs**, or open any transaction above on QoreScan.

@@ -3,7 +3,7 @@
 Ready-to-paste copy aligned with the **Post-Quantum AI Agents** category bounty and **Best AI-Native Build** special award criteria.
 
 - **Demo Video:** https://youtu.be/9QmegHHu8jc
-- **Live Web App:** https://emmanuel-webdev.github.io/LatticeWard-protocol/
+- **Live Web App:** https://latticeward-protocol.onrender.com/
 
 ---
 

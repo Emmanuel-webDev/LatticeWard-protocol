@@ -6,6 +6,10 @@
 
 Built for the QoreChain Developer Fest **"Build Before Q-Day"** (Post-Quantum AI Agents track). Target network: `qorechain-diana` (EVM Chain ID `9800`).
 
+- **Demo Video:** https://youtu.be/9QmegHHu8jc
+- **Live Web App:** https://emmanuel-webdev.github.io/LatticeWard-protocol/
+- **Submission Page:** https://build.qorechain.io/p/latticeward
+
 ---
 
 ## 1. Architecture & 3-Layer Post-Quantum Defense Model

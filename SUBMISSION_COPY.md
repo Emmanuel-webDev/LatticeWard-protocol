@@ -2,6 +2,9 @@
 
 Ready-to-paste copy aligned with the **Post-Quantum AI Agents** category bounty and **Best AI-Native Build** special award criteria.
 
+- **Demo Video:** https://youtu.be/9QmegHHu8jc
+- **Live Web App:** https://emmanuel-webdev.github.io/LatticeWard-protocol/
+
 ---
 
 ## 1. Project Description (Paste into the "Description" field — ~2,350 chars, fits comfortably under the form limit)

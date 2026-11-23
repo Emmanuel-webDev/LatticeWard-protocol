@@ -1,7 +1,7 @@
 node_modules/
-out/
-cache/
-lib/
+/out/
+/cache/
+/lib/
 .env
 *.key
 *.lwkey.json

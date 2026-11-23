@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig(({ command }) => ({
   plugins: [react()],
-  base: command === "build" ? "/LatticeWard-protocol/" : "/",
+  base: process.env.VITE_BASE_PATH || (process.env.RENDER ? "/" : command === "build" ? "/LatticeWard-protocol/" : "/"),
   server: {
     host: "127.0.0.1",
     port: 5173,

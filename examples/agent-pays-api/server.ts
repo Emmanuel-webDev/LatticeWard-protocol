@@ -219,10 +219,11 @@ export function createPaidApiServer(opts: PaidApiOptions = {}) {
 // Run standalone if executed directly
 const isMain = process.argv[1] && (process.argv[1].endsWith("server.ts") || process.argv[1].endsWith("server.js"));
 if (isMain) {
-  const port = Number(process.env.PAID_API_PORT || 4020);
+  const port = Number(process.env.PORT || process.env.PAID_API_PORT || 4020);
+  const host = process.env.HOST || "0.0.0.0";
   const { server } = createPaidApiServer({ port });
-  server.listen(port, "127.0.0.1", () => {
-    console.log(`[agent-pays-api] Listening on http://127.0.0.1:${port}`);
+  server.listen(port, host, () => {
+    console.log(`[agent-pays-api] Listening on http://${host}:${port}`);
     console.log(`[agent-pays-api] Vault: ${DEFAULT_VAULT}`);
     console.log(`[agent-pays-api] 0x0A02 Recipient: ${DEFAULT_RECIPIENT}`);
   });
